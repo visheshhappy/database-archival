@@ -247,4 +247,32 @@ public class ArchivalDaoImpl implements ArchivalDao {
         
     }
 
+    @Override
+    @Transactional("masterTransactionManager")
+    public Long getMasterInQueryCountResult(RelationTable rt, Set inQuerySet) {
+        return getCountByTableNameAndInQueryCriteria(rt, inQuerySet);
+    }
+
+    private Long getCountByTableNameAndInQueryCriteria(RelationTable rt, Set inQuerySet) {
+        Map<String, Object> queryParams = new HashMap<String, Object>();
+        String query = "select count(*) from " +rt.getTableName() + " where " + rt.getRelationColumn() + " IN (:inQuerySet)";
+        queryParams.put("inQuerySet", inQuerySet);
+        TimeTracker tt = new TimeTracker();
+        tt.startTracking();
+        SystemLog.logMessage("Getting in query result from db for table : temp_" + rt.getTableName() + " and in query set size is : "+ inQuerySet.size());
+        
+        List<Map<String, Object>> result = simpleJdbcTemplate.queryForList(query, queryParams);
+        tt.trackTimeInSeconds("#######Total time taken to execute 'in' query is : ");
+        for(Entry<String, Object> entry : result.get(0).entrySet()){
+            return (Long)entry.getValue();
+        }
+        return 0L;
+    }
+
+    @Override
+    @Transactional("archivalTransactionManager")
+    public Long getArchivalInQueryCountResult(RelationTable nextRelation, Set inQuerySet) {
+       return getCountByTableNameAndInQueryCriteria(nextRelation, inQuerySet);
+    }
+
 }

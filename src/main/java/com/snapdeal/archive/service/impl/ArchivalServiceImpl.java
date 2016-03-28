@@ -6,11 +6,9 @@ package com.snapdeal.archive.service.impl;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +39,7 @@ public class ArchivalServiceImpl implements ArchivalService {
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
         RelationTable rt = archivalDao.getRelationShipTableByTableName(tableName, 0);
-        Long totalObjects = getCount(tableName, baseCriteria);
+        Long totalObjects = getCountFromMaster(tableName, baseCriteria);
         long start = 0;
         while (start < totalObjects) {
             TimeTracker batchTracker = new TimeTracker();
@@ -51,7 +49,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             tableResultMap.put(rt.getTableName(), result);
             pushData(rt, result, baseCriteria);
             
-            Boolean isDataVerified = verifyBasedOnCount();
+            Boolean isDataVerified = verifyBasedOnCount(rt,baseCriteria);
             SystemLog.logMessage("The verification status for batch size :" + start+" to :"+ batchSize + " is : @@@@ "+ isDataVerified);
             
             start = start + batchSize;
@@ -60,6 +58,9 @@ public class ArchivalServiceImpl implements ArchivalService {
             
             batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");
             SystemLog.logMessage("============================================================================");
+            
+            tt.trackTimeInMinutes("********************************************************\n Total time elapsed since process was started is : ");
+            SystemLog.logMessage("*********************************************************");
             
             // clear the table result map for each batch processing..
             tableResultMap.clear();
@@ -77,16 +78,10 @@ public class ArchivalServiceImpl implements ArchivalService {
 
     @Override
     public void archieveVerifyAndDeleteData(String tableName, String baseCriteria,Long batchSize) {
-        /*archieveMasterData(tableName, baseCriteria, batchSize);
-        boolean isVerified = verifyArchivedData(tableName, baseCriteria, batchSize);
-        if(isVerified){
-            deleteMasterData(tableName, baseCriteria, batchSize);
-        }*/
-        
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
         RelationTable rt = archivalDao.getRelationShipTableByTableName(tableName, 0);
-        Long totalObjects = getCount(tableName, baseCriteria);
+        Long totalObjects = getCountFromMaster(tableName, baseCriteria);
         long start = 0;
         while (start < totalObjects) {
             TimeTracker batchTracker = new TimeTracker();
@@ -95,7 +90,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             List<Map<String, Object>> result = archivalDao.getResult(rt, criteria);
             tableResultMap.put(rt.getTableName(), result);
             pushData(rt, result, baseCriteria);
-            Boolean isVerified = verifyBasedOnCount();
+            Boolean isVerified = verifyBasedOnCount(rt,  baseCriteria);
             if(isVerified){
                 deleteData(rt, result, criteria);
             }            
@@ -104,7 +99,8 @@ public class ArchivalServiceImpl implements ArchivalService {
             
             batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");
             SystemLog.logMessage("============================================================================");
-            
+            tt.trackTimeInMinutes("********************************************************\n Total time elapsed since process was started is : ");
+            SystemLog.logMessage("*********************************************************");
             // clear the table result map for each batch processing..
             tableResultMap.clear();
         }
@@ -119,7 +115,7 @@ public class ArchivalServiceImpl implements ArchivalService {
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
         RelationTable rt = archivalDao.getRelationShipTableByTableName(tableName, 0);
-        Long totalObjects = getCount(tableName, baseCriteria);
+        Long totalObjects = getCountFromMaster(tableName, baseCriteria);
         long start = 0;
         while (start < totalObjects) {
             TimeTracker batchTracker = new TimeTracker();
@@ -139,15 +135,54 @@ public class ArchivalServiceImpl implements ArchivalService {
         SystemLog.logMessage("**************************************************************************************");
     }
 
-    private Boolean verifyBasedOnCount() {
-       for(String tableName : tableResultMap.keySet()){
+    private Boolean verifyBasedOnCount(RelationTable rt,  String baseCriteria) {
+        
+        SystemLog.logMessage("Calling verifyBasedOnCount() method for : " + rt.getTableName());
+        
+        Long masterCount  = getCountFromMaster(rt.getTableName(), baseCriteria);
+        Long archivalCount = getArchivalCount(rt.getTableName(),baseCriteria);
+        if(!masterCount.equals(archivalCount)){
+            return false;
+        }
+        
+        if (rt.getForeignRelations() != null && !rt.getForeignRelations().isEmpty()) {
+            for (RelationTable foreignRelation : rt.getForeignRelations()) {
+                String criteria = getNestedCriteria(foreignRelation, rt, baseCriteria);
+                Boolean isVerified = verifyArchivalCount(foreignRelation, criteria);
+                if(!isVerified){
+                    return false;
+                }
+            }
+        }
+        
+        Iterator<RelationTable> iterator = rt.getRelations().iterator();
+        while (iterator.hasNext()) {
+            RelationTable nextRelation = iterator.next();
+            Set inQuerySet = getInQuerySet(tableResultMap.get(rt.getTableName()), nextRelation);
+            Long inQueryMasterCountResult = archivalDao.getMasterInQueryCountResult(nextRelation,inQuerySet);
+            Long inQueryArchivalCountResult = archivalDao.getArchivalInQueryCountResult(nextRelation,inQuerySet);
+            if(!inQueryMasterCountResult.equals(inQueryArchivalCountResult)){
+                return false;
+            }
+           return verifyBasedOnCount(nextRelation, baseCriteria);
+        }
+        
+        return true;
+        
+      /* for(String tableName : tableResultMap.keySet()){
            int masterDataSize = tableResultMap.get(tableName).size();
            int archivedDataSize = insertedTableResultCountMap.get(tableName);
            if(masterDataSize!=archivedDataSize){
                return Boolean.FALSE;
            }
        }
-       return Boolean.TRUE;
+       return Boolean.TRUE;*/
+    }
+
+    @Override
+    public Long getArchivalCount(String tableName, String baseCriteria) {
+        Long count = archivalDao.getCountFromArchival(tableName, baseCriteria);
+        return count;
     }
 
     @Override
@@ -164,18 +199,14 @@ public class ArchivalServiceImpl implements ArchivalService {
     }
 
     private Boolean verifyArchivalCount(RelationTable rt, String criteria) {
-        /*Iterator<RelationTable> iterator = rt.getRelations().iterator();
-        while (iterator.hasNext()) {
-
-            RelationTable nextRelation = iterator.next();
-            Set inQuerySet1 = getInQuerySet(masterResult, nextRelation);
-            Set inQuerySet2 = getInQuerySet(archivedResult, nextRelation);
-            List masterResultInQuery = archivalDao.getInQueryResult(nextRelation, inQuerySet1);
-            List archivedResultInQuery = archivalDao.getInQueryResult(nextRelation, inQuerySet2);
-            return verifyCopiedData(nextRelation, masterResultInQuery, archivedResultInQuery);
-        }*/
-
-        return true;
+        
+        Long masterCount = getCountFromMaster(rt.getTableName(), criteria);
+        Long archivalCount = getArchivalCount(rt.getTableName(), criteria);
+        if(!masterCount.equals(archivalCount)){
+            return false;
+        }
+        
+        return verifyBasedOnCount(rt, criteria);
     }
 
     private void deleteData(RelationTable rt, List<Map<String, Object>> result, String criteria) {
@@ -214,13 +245,6 @@ public class ArchivalServiceImpl implements ArchivalService {
 
     }
 
-    private Boolean verifyData(RelationTable rt, String criteria) {
-        List masterResult = archivalDao.getResult(rt, criteria);
-        List archivedResult = archivalDao.getArchivalResult(rt);
-
-        return verifyCopiedData(rt, masterResult, archivedResult);
-
-    }
 
     private Boolean verifyCopiedData(RelationTable rt, List masterResult, List archivedResult) {
         Boolean isDataVerified = isDataVerified(masterResult, archivedResult);
@@ -373,7 +397,7 @@ public class ArchivalServiceImpl implements ArchivalService {
     }
 
     @Override
-    public Long getCount(String tableName, String criteria) {
+    public Long getCountFromMaster(String tableName, String criteria) {
         Long count = archivalDao.getCountFromMaster(tableName, criteria);
         return count;
 

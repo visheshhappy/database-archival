@@ -28,5 +28,4 @@ public class TimeTracker {
         double totalTime = ((time2 - time1) / 1000d)/60d;
         SystemLog.logMessage(message + " " + totalTime + " minutes");
     }
-
 }

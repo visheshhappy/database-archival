@@ -75,7 +75,7 @@ public class ArchivalController {
     public Long getCount(@PathVariable("tableName") String tableName){
         SystemLog.logMessage("Table name is  : " + tableName);
         String criteria = "where created<='2012-12-31'";
-        Long count = archivalService.getCount(tableName,criteria);
+        Long count = archivalService.getCountFromMaster(tableName,criteria);
         return count;
     }
     

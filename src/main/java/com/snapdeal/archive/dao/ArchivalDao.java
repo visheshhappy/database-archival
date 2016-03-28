@@ -16,22 +16,26 @@ import com.snapdeal.archive.entity.RelationTable;
  */
 public interface ArchivalDao {
 
-     RelationTable getRelationShipTableByTableName(String tableName, Integer i);
+    RelationTable getRelationShipTableByTableName(String tableName, Integer i);
 
-     List<Map<String, Object>> getResult(RelationTable rt,String criteria);
+    List<Map<String, Object>> getResult(RelationTable rt, String criteria);
 
-     List<Map<String, Object>>  getInQueryResult(RelationTable rt, Set inQuerySet);
+    List<Map<String, Object>> getInQueryResult(RelationTable rt, Set inQuerySet);
 
-     Integer insertToArchivalDB(RelationTable rt, List<Map<String, Object>> result);
+    Integer insertToArchivalDB(RelationTable rt, List<Map<String, Object>> result);
 
-     List getArchivalResult(RelationTable rt);
-    
-     List<RelationTable> getRelations();
+    List getArchivalResult(RelationTable rt);
 
-     void deleteFromMasterData(RelationTable rt, List<Map<String, Object>> result);
-     
-     Long getCountFromMaster(String tableName, String criteria);
+    List<RelationTable> getRelations();
+
+    void deleteFromMasterData(RelationTable rt, List<Map<String, Object>> result);
+
+    Long getCountFromMaster(String tableName, String criteria);
 
     Long getCountFromArchival(String tableName, String criteria);
+
+    Long getMasterInQueryCountResult(RelationTable nextRelation, Set inQuerySet);
+
+    Long getArchivalInQueryCountResult(RelationTable nextRelation, Set inQuerySet);
 
 }

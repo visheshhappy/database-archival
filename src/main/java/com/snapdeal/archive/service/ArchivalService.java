@@ -18,10 +18,12 @@ public interface ArchivalService {
 
     void archieveVerifyAndDeleteData(String tableName, String criteria,Long batchSize);
 
-    Long getCount(String tableName, String criteria);
+    Long getCountFromMaster(String tableName, String criteria);
 
     RelationTable getRelationTableByTableName(String tableName);
 
     void archieveMasterData(String tableName, String criteria, Long batchSize);
+
+    Long getArchivalCount(String tableName, String baseCriteria);
 
 }
