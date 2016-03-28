@@ -22,7 +22,7 @@ public interface ArchivalDao {
 
      List<Map<String, Object>>  getInQueryResult(RelationTable rt, Set inQuerySet);
 
-     void insertToArchivalDB(RelationTable rt, List<Map<String, Object>> result);
+     Integer insertToArchivalDB(RelationTable rt, List<Map<String, Object>> result);
 
      List getArchivalResult(RelationTable rt);
     

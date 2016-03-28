@@ -54,18 +54,20 @@ public class ArchivalController {
         archivalService.archieveMasterData(tableName,criteria,Long.valueOf(batchSize));    
     }
     
-    @RequestMapping("/archive/verify/delete/{tableName}")
-    public void archieveVerifyAndDeleteData(@PathVariable("tableName") String tableName){
+    @RequestMapping("/archive/verify/delete/{tableName}/{batchSize}")
+    public void archieveVerifyAndDeleteData(@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize){
         SystemLog.logMessage("Table name is  : " + tableName);
         String criteria = "where created<='2012-12-31'";
-        archivalService.archieveVerifyAndDeleteData(tableName,criteria);
+        Long batch = Long.valueOf(batchSize);
+        archivalService.archieveVerifyAndDeleteData(tableName,criteria,batch);
     }
     
-    @RequestMapping("/delete/{tableName}")
-    public void deleteData(@PathVariable("tableName") String tableName){
+    @RequestMapping("/delete/{tableName}/{batchSize}")
+    public void deleteData(@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize){
         SystemLog.logMessage("Table name is  : " + tableName);
         String criteria = "where created<='2012-12-31'";
-        archivalService.deleteData(tableName,criteria);
+        Long batch = Long.valueOf(batchSize);
+        archivalService.deleteMasterData(tableName,criteria,batch);
     }
     
     @RequestMapping("/count/{tableName}")

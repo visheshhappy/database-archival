@@ -76,16 +76,28 @@ public class ArchivalDaoImpl implements ArchivalDao {
     @Transactional("masterTransactionManager")
     public List<Map<String, Object>> getInQueryResult(RelationTable rt, Set inQuerySet) {
         Map<String, Object> queryParams = new HashMap<String, Object>();
-        String query = "select * from " + rt.getTableName() + " where " + rt.getRelationColumn() + " IN (:inQuerySet)";
-        queryParams.put("inQuerySet", inQuerySet);
-        TimeTracker tt = new TimeTracker();
-        tt.startTracking();
-        SystemLog.logMessage("Getting in query result from db for table : " + rt.getTableName() + " and in query set size is : "+ inQuerySet.size());
-        try {
+        
+        try{
+          /*  SystemLog.logMessage("Trying to create temporary table with name temp_"+rt.getTableName() +" and index on "+rt.getRelationColumn());
+            String temporaryTableQuery =  "CREATE TEMPORARY TABLE "+ "temp_"+rt.getTableName()+" (INDEX temp_index ("+rt.getRelationColumn()+")) select * from " + rt.getTableName();
+            List<Object[]> param = new ArrayList<>();
+            int[] res = simpleJdbcTemplate.batchUpdate(temporaryTableQuery , param);
+            SystemLog.logMessage("Temporary table created successfully" + res);
+            int[] test = simpleJdbcTemplate.batchUpdate("select * from "+"temp_"+rt.getTableName() +" limit 1", param);
+            SystemLog.logMessage("Simple test query resulted in : " + test);*/
+            
+            
+            
+            String query = "select * from " +rt.getTableName() + " where " + rt.getRelationColumn() + " IN (:inQuerySet)";
+            queryParams.put("inQuerySet", inQuerySet);
+            TimeTracker tt = new TimeTracker();
+            tt.startTracking();
+            SystemLog.logMessage("Getting in query result from db for table : temp_" + rt.getTableName() + " and in query set size is : "+ inQuerySet.size());
+            
             List<Map<String, Object>> result = simpleJdbcTemplate.queryForList(query, queryParams);
             tt.trackTimeInSeconds("#######Total time taken to execute 'in' query is : ");
             return result;
-        } catch (Exception e) {
+        }catch(Exception e){
             SystemLog.logMessage(e.getMessage());
         }
         return new ArrayList<>();
@@ -94,12 +106,12 @@ public class ArchivalDaoImpl implements ArchivalDao {
 
     @Override
     @Transactional("archivalTransactionManager")
-    public void insertToArchivalDB(RelationTable rt, List<Map<String, Object>> result) {
+    public Integer insertToArchivalDB(RelationTable rt, List<Map<String, Object>> result) {
 
         // if the result to be added in archival db is empty, then simply return
         if (result.isEmpty()) {
             SystemLog.logMessage("No data to be archived for : " + rt.getTableName());
-            return;
+            return 0;
         }
 
         StringBuilder columnNameBuilder = new StringBuilder();
@@ -128,17 +140,18 @@ public class ArchivalDaoImpl implements ArchivalDao {
         //INSERT INTO FORUMS (FORUM_ID, FORUM_NAME, FORUM_DESC) VALUES (?,?,?)
         String query = "INSERT IGNORE INTO " + rt.getTableName() + " (" + columnNames + " ) VALUES (" + placeHolder + " )";
         SystemLog.logMessage("Inserting data for table...  : " + rt.getTableName() + ", total records are :   " + result.size());
-        long time1 = System.currentTimeMillis();
         try {
+            TimeTracker tt = new TimeTracker();
+            tt.startTracking();
             int[] batchUpdateResult = archivalJdbcTemplate.batchUpdate(query, batchArgs);
-            long time2 = System.currentTimeMillis();
-            long diff = (time2 - time1) / 1000;
-            SystemLog.logMessage("^^^^^^^^^^Total time taken to execute update query is  : " + diff + " seconds");
-            SystemLog.logMessage("Result is : " + batchUpdateResult);
+            tt.trackTimeInSeconds("^^^^^^^^^^Total time taken to execute update query is  :");
+            SystemLog.logMessage("Result is : " + batchUpdateResult.length);
+            return batchUpdateResult.length;
         } catch (Exception e) {
             e.printStackTrace();
             SystemLog.logMessage(e.getMessage());
         }
+        return 0;
 
     }
 
@@ -159,6 +172,7 @@ public class ArchivalDaoImpl implements ArchivalDao {
     }
 
     @Override
+    @Transactional("archivalTransactionManager") // change this to masterTransactionalManager once the deletion is fully tested and ready for production
     public void deleteFromMasterData(RelationTable rt, List<Map<String, Object>> result) {
         if (result.isEmpty()) {
             SystemLog.logMessage("No data found to delete..!!");

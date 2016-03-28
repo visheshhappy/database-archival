@@ -12,11 +12,11 @@ import com.snapdeal.archive.entity.RelationTable;
  */
 public interface ArchivalService {
 
-    void deleteData(String tableName, String criteria);
+    void deleteMasterData(String tableName, String criteria,Long batchSize);
 
-    boolean verifyData(String tableName, String criteria);
+    boolean verifyArchivedData(String tableName, String criteria,Long batchSize);
 
-    void archieveVerifyAndDeleteData(String tableName, String criteria);
+    void archieveVerifyAndDeleteData(String tableName, String criteria,Long batchSize);
 
     Long getCount(String tableName, String criteria);
 
