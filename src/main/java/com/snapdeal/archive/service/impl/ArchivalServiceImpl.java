@@ -49,7 +49,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             tableResultMap.put(rt.getTableName(), result);
             pushData(rt, result, baseCriteria);
             
-            Boolean isDataVerified = verifyBasedOnCount(rt,baseCriteria);
+            Boolean isDataVerified = verifyBasedOnCount(rt,criteria);
             SystemLog.logMessage("The verification status for batch size :" + start+" to :"+ batchSize + " is : @@@@ "+ isDataVerified);
             
             start = start + batchSize;
@@ -134,12 +134,40 @@ public class ArchivalServiceImpl implements ArchivalService {
         tt.trackTimeInMinutes("********************************************************************\n Total time taken to Delete data is : ");
         SystemLog.logMessage("**************************************************************************************");
     }
+    
+    /*private Boolean test(RelationTable rt,String baseCriteria){
+        if(tableResultMap.get(rt.getTableName()).size()==insertedTableResultCountMap.get(rt.getTableName())){
+            List<Map<String, Object>> masterResult = tableResultMap.get(rt.getTableName());
+            List<Map<String, Object>> archivalResult = masterResult; 
+            return verifyBasedOnCount(rt,baseCriteria,masterResult,archivalResult);        
+        }
+        else{
+            return false;
+        }
+    }*/
+
+    /*private Boolean verifyBasedOnCount(RelationTable rt, String baseCriteria, List<Map<String, Object>> masterResult, List<Map<String, Object>> archivalResult) {
+        Iterator<RelationTable> iterator = rt.getRelations().iterator();
+        while (iterator.hasNext()) {
+            RelationTable nextRelation = iterator.next();
+            Set inQuerySet = getInQuerySet(masterResult, nextRelation);
+            Set inQueryForArchivalSet = getInQuerySet(archivalResult, nextRelation);
+            Long inQueryMasterCountResult = archivalDao.getMasterInQueryCountResult(nextRelation,inQuerySet);
+            Long inQueryArchivalCountResult = archivalDao.getArchivalInQueryCountResult(nextRelation,inQueryForArchivalSet);
+            if(!inQueryMasterCountResult.equals(inQueryArchivalCountResult)){
+                return false;
+            }
+           return verifyBasedOnCount(nextRelation, baseCriteria,);
+        }
+        
+        return true;
+    }*/
 
     private Boolean verifyBasedOnCount(RelationTable rt,  String baseCriteria) {
         
         SystemLog.logMessage("Calling verifyBasedOnCount() method for : " + rt.getTableName());
         
-        Long masterCount  = getCountFromMaster(rt.getTableName(), baseCriteria);
+        /*Long masterCount  =  getCountFromMaster(rt.getTableName(), baseCriteria);
         Long archivalCount = getArchivalCount(rt.getTableName(),baseCriteria);
         if(!masterCount.equals(archivalCount)){
             return false;
@@ -164,19 +192,19 @@ public class ArchivalServiceImpl implements ArchivalService {
             if(!inQueryMasterCountResult.equals(inQueryArchivalCountResult)){
                 return false;
             }
-           return verifyBasedOnCount(nextRelation, baseCriteria);
+           return verifyBasedOnCount(nextRelation, baseCriteria,start,batchSize);
         }
         
-        return true;
+        return true;*/
         
-      /* for(String tableName : tableResultMap.keySet()){
+       for(String tableName : tableResultMap.keySet()){
            int masterDataSize = tableResultMap.get(tableName).size();
            int archivedDataSize = insertedTableResultCountMap.get(tableName);
            if(masterDataSize!=archivedDataSize){
                return Boolean.FALSE;
            }
        }
-       return Boolean.TRUE;*/
+       return Boolean.TRUE;
     }
 
     @Override
@@ -246,31 +274,6 @@ public class ArchivalServiceImpl implements ArchivalService {
     }
 
 
-    private Boolean verifyCopiedData(RelationTable rt, List masterResult, List archivedResult) {
-        Boolean isDataVerified = isDataVerified(masterResult, archivedResult);
-        if (!isDataVerified) {
-            return isDataVerified;
-        }
-
-        Iterator<RelationTable> iterator = rt.getRelations().iterator();
-        while (iterator.hasNext()) {
-
-            RelationTable nextRelation = iterator.next();
-            Set inQuerySet1 = getInQuerySet(masterResult, nextRelation);
-            Set inQuerySet2 = getInQuerySet(archivedResult, nextRelation);
-            List masterResultInQuery = archivalDao.getInQueryResult(nextRelation, inQuerySet1);
-            List archivedResultInQuery = archivalDao.getInQueryResult(nextRelation, inQuerySet2);
-            return verifyCopiedData(nextRelation, masterResultInQuery, archivedResultInQuery);
-        }
-
-        return true;
-
-    }
-
-    private Boolean isDataVerified(List masterResult, List archivedResult) {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
     private void pushData(RelationTable rt, List<Map<String, Object>> result, String criteria) {
 

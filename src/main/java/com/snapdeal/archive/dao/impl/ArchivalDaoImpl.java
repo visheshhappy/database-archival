@@ -217,19 +217,6 @@ public class ArchivalDaoImpl implements ArchivalDao {
     @Transactional("masterTransactionManager")
     public Long getCountFromMaster(String tableName, String criteria) {
         String query = "select count(*) from " + tableName + " " + criteria;
-        return getCount(query);
-
-    }
-    
-    @Override
-    @Transactional("archivalTransactionManager")
-    public Long getCountFromArchival(String tableName, String criteria) {
-        String query = "select count(*) from " + tableName + " " + criteria;
-        return getCount(query);
-
-    }
-    
-    private Long getCount(String query){
         SystemLog.logMessage("Getting Result for query.!!! \n " + query);
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
@@ -244,16 +231,33 @@ public class ArchivalDaoImpl implements ArchivalDao {
             SystemLog.logMessage(e.getMessage());
         }
         return 0L;
-        
-    }
 
+    }
+    
+    @Override
+    @Transactional("archivalTransactionManager")
+    public Long getCountFromArchival(String tableName, String criteria) {
+        String query = "select count(*) from " + tableName + " " + criteria;
+        SystemLog.logMessage("Getting Result for query.!!! \n " + query);
+        TimeTracker tt = new TimeTracker();
+        tt.startTracking();
+        Object[] params = null;
+        try {
+            List<Map<String, Object>> count = archivalJdbcTemplate.queryForList(query, params);
+            tt.trackTimeInSeconds("@@@@@@@Total time taken to execute query is  : ");
+            for(Entry<String, Object> entry : count.get(0).entrySet()){
+                return (Long)entry.getValue();
+            }
+        } catch (Exception e) {
+            SystemLog.logMessage(e.getMessage());
+        }
+        return 0L;
+
+    }
+    
     @Override
     @Transactional("masterTransactionManager")
     public Long getMasterInQueryCountResult(RelationTable rt, Set inQuerySet) {
-        return getCountByTableNameAndInQueryCriteria(rt, inQuerySet);
-    }
-
-    private Long getCountByTableNameAndInQueryCriteria(RelationTable rt, Set inQuerySet) {
         Map<String, Object> queryParams = new HashMap<String, Object>();
         String query = "select count(*) from " +rt.getTableName() + " where " + rt.getRelationColumn() + " IN (:inQuerySet)";
         queryParams.put("inQuerySet", inQuerySet);
@@ -271,8 +275,20 @@ public class ArchivalDaoImpl implements ArchivalDao {
 
     @Override
     @Transactional("archivalTransactionManager")
-    public Long getArchivalInQueryCountResult(RelationTable nextRelation, Set inQuerySet) {
-       return getCountByTableNameAndInQueryCriteria(nextRelation, inQuerySet);
+    public Long getArchivalInQueryCountResult(RelationTable rt, Set inQuerySet) {
+        Map<String, Object> queryParams = new HashMap<String, Object>();
+        String query = "select count(*) from " +rt.getTableName() + " where " + rt.getRelationColumn() + " IN (:inQuerySet)";
+        queryParams.put("inQuerySet", inQuerySet);
+        TimeTracker tt = new TimeTracker();
+        tt.startTracking();
+        SystemLog.logMessage("Getting in query result from db for table : temp_" + rt.getTableName() + " and in query set size is : "+ inQuerySet.size());
+        
+        List<Map<String, Object>> result = archivalJdbcTemplate.queryForList(query, queryParams);
+        tt.trackTimeInSeconds("#######Total time taken to execute 'in' query is : ");
+        for(Entry<String, Object> entry : result.get(0).entrySet()){
+            return (Long)entry.getValue();
+        }
+        return 0L;
     }
 
 }

@@ -50,7 +50,7 @@ public class ArchivalController {
     @RequestMapping("/archivedata/{tableName}/{batchSize}")
     public void archieveData(@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize){
         SystemLog.logMessage("Table name is  : " + tableName);
-        String criteria = "where created<='2012-12-31' ";
+        String criteria = "where created<='2011-12-31' ";
         archivalService.archieveMasterData(tableName,criteria,Long.valueOf(batchSize));    
     }
     
