@@ -5,6 +5,7 @@
 package com.snapdeal.archive.service;
 
 import com.snapdeal.archive.entity.RelationTable;
+import com.snapdeal.archive.exception.BusinessException;
 
 /**
  * @version 1.0, 17-Mar-2016
@@ -12,18 +13,18 @@ import com.snapdeal.archive.entity.RelationTable;
  */
 public interface ArchivalService {
 
-    void deleteMasterData(String tableName, String criteria,Long batchSize);
+    void deleteMasterData(String tableName, String criteria,Long batchSize) throws BusinessException ;
 
-    boolean verifyArchivedData(String tableName, String criteria,Long batchSize);
+    boolean verifyArchivedData(String tableName, String criteria,Long batchSize) throws BusinessException ;
 
-    void archieveVerifyAndDeleteData(String tableName, String criteria,Long batchSize);
+    void archieveVerifyAndDeleteData(String tableName, String criteria,Long batchSize) throws BusinessException ;
 
-    Long getCountFromMaster(String tableName, String criteria);
+    Long getCountFromMaster(String tableName, String criteria) throws BusinessException ;
 
-    RelationTable getRelationTableByTableName(String tableName);
+    RelationTable getRelationTableByTableName(String tableName) throws BusinessException ;
 
-    void archieveMasterData(String tableName, String criteria, Long batchSize);
+    void archieveMasterData(String tableName, String criteria, Long batchSize) throws BusinessException ;
 
-    Long getArchivalCount(String tableName, String baseCriteria);
+    Long getArchivalCount(String tableName, String baseCriteria) throws BusinessException ;
 
 }

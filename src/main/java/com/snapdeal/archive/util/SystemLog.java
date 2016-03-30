@@ -4,6 +4,8 @@
  */  
 package com.snapdeal.archive.util;
 
+import java.util.Date;
+
 /**
  *  
  *  @version     1.0, 21-Mar-2016
@@ -12,7 +14,15 @@ package com.snapdeal.archive.util;
 public class SystemLog {
     
     public static void logMessage(String message){
-        System.out.println(message);
+        Date d = new Date();
+        System.out.println(d.toString()+" : "+message);
+    }
+
+    public static void logException(String message) {
+        System.out.println("++++++++++++++++++++LOGGING EXCEPTION++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+        Date d = new Date();
+        System.out.println(d.toString()+" : "+message);
+        System.out.println("++++++++++++++++++++EXCEPTION LOGGING FINISH+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
     }
 
 }

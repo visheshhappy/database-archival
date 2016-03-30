@@ -114,5 +114,10 @@
 	<bean id="archivalJdbcTemplate" class="org.springframework.jdbc.core.simple.SimpleJdbcTemplate">
 		<constructor-arg ref="archivalDataSource" />
 	</bean>
+	
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/pages/" />
+        <property name="suffix" value=".jsp" />
+    </bean>
 
 </beans>

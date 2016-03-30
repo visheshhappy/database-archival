@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.snapdeal.archive.entity.RelationTable;
+import com.snapdeal.archive.exception.BusinessException;
 
 /**
  * @version 1.0, 16-Mar-2016
@@ -16,26 +17,26 @@ import com.snapdeal.archive.entity.RelationTable;
  */
 public interface ArchivalDao {
 
-    RelationTable getRelationShipTableByTableName(String tableName, Integer i);
+    RelationTable getRelationShipTableByTableName(String tableName, Integer i)throws BusinessException;
 
-    List<Map<String, Object>> getResult(RelationTable rt, String criteria);
+    List<Map<String, Object>> getResult(RelationTable rt, String criteria)throws BusinessException;
 
-    List<Map<String, Object>> getInQueryResult(RelationTable rt, Set inQuerySet);
+    List<Map<String, Object>> getInQueryResult(RelationTable rt, Set inQuerySet)throws BusinessException;
 
-    Integer insertToArchivalDB(RelationTable rt, List<Map<String, Object>> result);
+    Integer insertToArchivalDB(RelationTable rt, List<Map<String, Object>> result)throws BusinessException;
 
-    List getArchivalResult(RelationTable rt);
+    List getArchivalResult(RelationTable rt)throws BusinessException;
 
-    List<RelationTable> getRelations();
+    List<RelationTable> getRelations()throws BusinessException;
 
-    void deleteFromMasterData(RelationTable rt, List<Map<String, Object>> result);
+    void deleteFromMasterData(RelationTable rt, List<Map<String, Object>> result)throws BusinessException;
 
-    Long getCountFromMaster(String tableName, String criteria);
+    Long getCountFromMaster(String tableName, String criteria)throws BusinessException;
 
-    Long getCountFromArchival(String tableName, String criteria);
+    Long getCountFromArchival(String tableName, String criteria)throws BusinessException;
 
-    Long getMasterInQueryCountResult(RelationTable nextRelation, Set inQuerySet);
+    Long getMasterInQueryCountResult(RelationTable nextRelation, Set inQuerySet)throws BusinessException;
 
-    Long getArchivalInQueryCountResult(RelationTable nextRelation, Set inQuerySet);
+    Long getArchivalInQueryCountResult(RelationTable nextRelation, Set inQuerySet)throws BusinessException;
 
 }
