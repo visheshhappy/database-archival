@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.snapdeal.archive.dao.ArchivalDao;
+import com.snapdeal.archive.dao.RelationDao;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
 import com.snapdeal.archive.service.ArchivalService;
@@ -32,7 +32,7 @@ import com.snapdeal.archive.util.SystemLog;
 public class ArchivalController {
     
     @Autowired
-    private ArchivalDao archivalDao;
+    private RelationDao relationDao;
     
     @Autowired
     private ArchivalService archivalService;
@@ -41,7 +41,7 @@ public class ArchivalController {
     @ResponseBody
     public List<RelationTable> getRelations() throws BusinessException{
         
-        List<RelationTable> relationTables= archivalDao.getRelations();
+        List<RelationTable> relationTables= relationDao.getRelations();
         return  relationTables;
     }
     
@@ -77,30 +77,33 @@ public class ArchivalController {
     }
     
     @RequestMapping("/archivedata/{tableName}/{batchSize}")
-    public void archieveData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws NumberFormatException, BusinessException{
+    public String archieveData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws NumberFormatException, BusinessException{
         SystemLog.logMessage("Table name is  : " + tableName);
        // String criteria = "where created<='2011-12-31' ";
         
         String criteria = "where "+ request.getParameter("whereClause") ;
         archivalService.archieveMasterData(tableName,criteria,Long.valueOf(batchSize));    
+        return "home";
     }
     
     @RequestMapping("/archive/verify/delete/{tableName}/{batchSize}")
-    public void archieveVerifyAndDeleteData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws BusinessException{
+    public String archieveVerifyAndDeleteData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws BusinessException{
         SystemLog.logMessage("Table name is  : " + tableName);
         //String criteria = "where created<='2012-12-31'";
         String criteria = "where "+ request.getParameter("whereClause") ;
         Long batch = Long.valueOf(batchSize);
         archivalService.archieveVerifyAndDeleteData(tableName,criteria,batch);
+        return "home";
     }
     
     @RequestMapping("/delete/{tableName}/{batchSize}")
-    public void deleteData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws BusinessException{
+    public String deleteData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws BusinessException{
         SystemLog.logMessage("Table name is  : " + tableName);
     //    String criteria = "where created<='2012-12-31'";
         String criteria = "where "+ request.getParameter("whereClause") ;
         Long batch = Long.valueOf(batchSize);
         archivalService.deleteMasterData(tableName,criteria,batch);
+        return "home";
     }
     
     @RequestMapping("/count/{tableName}")

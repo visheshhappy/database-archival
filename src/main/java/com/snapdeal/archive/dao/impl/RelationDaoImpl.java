@@ -6,7 +6,6 @@ package com.snapdeal.archive.dao.impl;
 
 import java.util.List;
 
-import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -43,9 +42,9 @@ public class RelationDaoImpl implements RelationDao {
             // session.save(query);
 
             Query sqlQuery = session.createSQLQuery("insert into execution_query (`table_name`,`batch_start`,`batch_size`,"
-                    + "`complete_query`,`status`,`criteria`) VALUES (\""
+                    + "`complete_query`,`status`,`criteria`,`exception_message`) VALUES (\""
                     + query.getTableName() + "\",\"" + query.getStart() + "\",\""
-                    + query.getBatchSize() + "\",\"" + query.getCompleteQuery() + "\",\"" + query.getStatus() + "\",\" "+query.getCriteria()+"\");");
+                    + query.getBatchSize() + "\",\"" + query.getCompleteQuery() + "\",\"" + query.getStatus() + "\",\" "+query.getCriteria()+"\",\""+query.getExceptionMessage()+"\");");
            sqlQuery.executeUpdate();
         } catch (Exception e) {
             throw new BusinessException(e);

@@ -6,7 +6,6 @@ package com.snapdeal.archive.entity;
 
 import java.io.Serializable;
 
-import javax.annotation.Generated;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -15,6 +14,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  * @version 1.0, 29-Mar-2016
@@ -56,6 +56,12 @@ public class ExecutionQuery implements Serializable {
     @Enumerated(EnumType.STRING)
     private Status status;
 
+    @Column(name = "exception_message")
+    private String exceptionMessage;
+
+    @Transient
+    private String criteriaWithoutSpace;
+
     public String getTableName() {
         return tableName;
     }
@@ -70,6 +76,8 @@ public class ExecutionQuery implements Serializable {
 
     public void setCriteria(String criteria) {
         this.criteria = criteria;
+        // set the criteriaWithoutSpace(remove all spaces from criteria) to this transient field
+        this.criteriaWithoutSpace = this.criteria.replaceAll("\\s", "");
     }
 
     public Long getStart() {
@@ -117,11 +125,21 @@ public class ExecutionQuery implements Serializable {
         this.status = status;
     }
 
+    public String getExceptionMessage() {
+        return exceptionMessage;
+    }
+
+    public void setExceptionMessage(String exceptionMessage) {
+        this.exceptionMessage = exceptionMessage;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((criteriaWithoutSpace == null) ? 0 : criteriaWithoutSpace.hashCode());
         result = prime * result + ((start == null) ? 0 : start.hashCode());
+        result = prime * result + ((status == null) ? 0 : status.hashCode());
         result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
         return result;
     }
@@ -135,10 +153,17 @@ public class ExecutionQuery implements Serializable {
         if (getClass() != obj.getClass())
             return false;
         ExecutionQuery other = (ExecutionQuery) obj;
+        if (criteriaWithoutSpace == null) {
+            if (other.criteriaWithoutSpace != null)
+                return false;
+        } else if (!criteriaWithoutSpace.equals(other.criteriaWithoutSpace))
+            return false;
         if (start == null) {
             if (other.start != null)
                 return false;
         } else if (!start.equals(other.start))
+            return false;
+        if (status != other.status)
             return false;
         if (tableName == null) {
             if (other.tableName != null)
