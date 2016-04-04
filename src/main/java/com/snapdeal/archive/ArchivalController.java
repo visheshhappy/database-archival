@@ -79,8 +79,6 @@ public class ArchivalController {
     @RequestMapping("/archivedata/{tableName}/{batchSize}")
     public String archieveData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws NumberFormatException, BusinessException{
         SystemLog.logMessage("Table name is  : " + tableName);
-       // String criteria = "where created<='2011-12-31' ";
-        
         String criteria = "where "+ request.getParameter("whereClause") ;
         archivalService.archieveMasterData(tableName,criteria,Long.valueOf(batchSize));    
         return "home";
@@ -89,7 +87,6 @@ public class ArchivalController {
     @RequestMapping("/archive/verify/delete/{tableName}/{batchSize}")
     public String archieveVerifyAndDeleteData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws BusinessException{
         SystemLog.logMessage("Table name is  : " + tableName);
-        //String criteria = "where created<='2012-12-31'";
         String criteria = "where "+ request.getParameter("whereClause") ;
         Long batch = Long.valueOf(batchSize);
         archivalService.archieveVerifyAndDeleteData(tableName,criteria,batch);
@@ -99,7 +96,6 @@ public class ArchivalController {
     @RequestMapping("/delete/{tableName}/{batchSize}")
     public String deleteData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws BusinessException{
         SystemLog.logMessage("Table name is  : " + tableName);
-    //    String criteria = "where created<='2012-12-31'";
         String criteria = "where "+ request.getParameter("whereClause") ;
         Long batch = Long.valueOf(batchSize);
         archivalService.deleteMasterData(tableName,criteria,batch);
@@ -110,7 +106,7 @@ public class ArchivalController {
     @ResponseBody
     public Long getCount(HttpServletRequest request, @PathVariable("tableName") String tableName) throws BusinessException{
         SystemLog.logMessage("Table name is  : " + tableName);
-        String criteria = "where "+ request.getParameter("whereClause") ;//"where created<='2012-12-31'";
+        String criteria = "where "+ request.getParameter("whereClause") ;
         Long count = archivalService.getCountFromMaster(tableName,criteria);
         return count;
     }

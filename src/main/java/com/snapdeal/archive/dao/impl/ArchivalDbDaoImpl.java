@@ -132,7 +132,31 @@ public class ArchivalDbDaoImpl implements ArchivalDbDao {
             queryParams.put("inQuerySet", inQuerySet);
             TimeTracker tt = new TimeTracker();
             tt.startTracking();
-            SystemLog.logMessage("Getting in query result from db for table : temp_" + rt.getTableName() + " and in query set size is : " + inQuerySet.size());
+
+            List<Map<String, Object>> result = archivalJdbcTemplate.queryForList(query, queryParams);
+            tt.trackTimeInSeconds("#######Total time taken to execute 'in' query is : ");
+            for (Entry<String, Object> entry : result.get(0).entrySet()) {
+                return (Long) entry.getValue();
+            }
+        } catch (Exception e) {
+            throw new BusinessException(e);
+        }
+
+        return 0L;
+    }
+
+    @Override
+    @Transactional("archivalTransactionManager")
+    public Long getArchivedDataCount(String tableName, String column, Set primaryKeySet) throws BusinessException {
+        try {
+            if(primaryKeySet.isEmpty()){
+                return 0L;
+            }
+            Map<String, Object> queryParams = new HashMap<String, Object>();
+            String query = "select count(*) from " + tableName+ " where " + column + " IN (:inQuerySet)";
+            queryParams.put("inQuerySet", primaryKeySet);
+            TimeTracker tt = new TimeTracker();
+            tt.startTracking();
 
             List<Map<String, Object>> result = archivalJdbcTemplate.queryForList(query, queryParams);
             tt.trackTimeInSeconds("#######Total time taken to execute 'in' query is : ");

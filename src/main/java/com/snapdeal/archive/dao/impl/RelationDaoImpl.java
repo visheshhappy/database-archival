@@ -4,6 +4,7 @@
  */
 package com.snapdeal.archive.dao.impl;
 
+import java.util.Date;
 import java.util.List;
 
 import org.hibernate.Query;
@@ -30,21 +31,25 @@ public class RelationDaoImpl implements RelationDao {
     private SessionFactory sessionFactory;
 
     @Override
+    @Transactional("transactionManager")
     public void saveExecutionQuery(ExecutionQuery query) throws BusinessException {
         try {
             Session session = sessionFactory.getCurrentSession();
            
+            query.setCreatedDate(new Date());
+            
             // TODO : Dont know why this is not working.. it is generating a query like
             // insert into execution_query (batch_size, complete_query, criteria, batch_start, status, table_name, id) 
             //  values (?, ?, ?, ?, ?, ?, ?)
             // Since id is auto generated, the id column should not be present in this query statement.
             // TODO : resolve this later..THIS IS REALLY BAD.. :(
-            // session.save(query);
-
+           //  session.save(query);
+           
+            
             Query sqlQuery = session.createSQLQuery("insert into execution_query (`table_name`,`batch_start`,`batch_size`,"
-                    + "`complete_query`,`status`,`criteria`,`exception_message`) VALUES (\""
+                    + "`complete_query`,`status`,`criteria`,`exception_message`,`created_date`,`query_type`) VALUES (\""
                     + query.getTableName() + "\",\"" + query.getStart() + "\",\""
-                    + query.getBatchSize() + "\",\"" + query.getCompleteQuery() + "\",\"" + query.getStatus() + "\",\" "+query.getCriteria()+"\",\""+query.getExceptionMessage()+"\");");
+                    + query.getBatchSize() + "\",\"" + query.getCompleteQuery() + "\",\"" + query.getStatus() + "\",\" "+query.getCriteria()+"\",\""+query.getExceptionMessage()+"\",\""+query.getCreatedDate()+"\",\""+query.getQueryType()+"\");");
            sqlQuery.executeUpdate();
         } catch (Exception e) {
             throw new BusinessException(e);

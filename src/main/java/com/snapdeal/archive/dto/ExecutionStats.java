@@ -11,16 +11,17 @@ import java.util.Map;
 import java.util.Set;
 
 import com.snapdeal.archive.entity.ExecutionQuery;
+import com.snapdeal.archive.entity.RelationTable;
 
 /**
- * This class is immutable and contains all the stats that are related with Archiving
+ * This class contains all the stats that are related with Archiving
  * 
  * @version 1.0, 30-Mar-2016
  * @author vishesh
  */
 public final class ExecutionStats {
 
-    private Map<String, List<Map<String, Object>>> tableResultMap;
+    private Map<RelationTable, List<Map<String, Object>>> tableResultMap;
     private Map<String, Integer>                   insertedTableResultCountMap;
     private Set<ExecutionQuery>                    failedQueryList;
     private Set<ExecutionQuery>                    permanantFailedQueryList;
@@ -37,7 +38,7 @@ public final class ExecutionStats {
 
     }
 
-    public Map<String, List<Map<String, Object>>> getTableResultMap() {
+    public Map<RelationTable, List<Map<String, Object>>> getTableResultMap() {
         return tableResultMap;
     }
 

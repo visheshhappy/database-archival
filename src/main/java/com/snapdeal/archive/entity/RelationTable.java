@@ -187,4 +187,61 @@ public class RelationTable implements Serializable {
                 + "]";
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((primaryColumn == null) ? 0 : primaryColumn.hashCode());
+        result = prime * result + ((relatedToColumnName == null) ? 0 : relatedToColumnName.hashCode());
+        result = prime * result + ((relatedToColumnType == null) ? 0 : relatedToColumnType.hashCode());
+        result = prime * result + ((relatedToTableName == null) ? 0 : relatedToTableName.hashCode());
+        result = prime * result + ((relationColumn == null) ? 0 : relationColumn.hashCode());
+        result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        RelationTable other = (RelationTable) obj;
+        if (primaryColumn == null) {
+            if (other.primaryColumn != null)
+                return false;
+        } else if (!primaryColumn.equals(other.primaryColumn))
+            return false;
+        if (relatedToColumnName == null) {
+            if (other.relatedToColumnName != null)
+                return false;
+        } else if (!relatedToColumnName.equals(other.relatedToColumnName))
+            return false;
+        if (relatedToColumnType == null) {
+            if (other.relatedToColumnType != null)
+                return false;
+        } else if (!relatedToColumnType.equals(other.relatedToColumnType))
+            return false;
+        if (relatedToTableName == null) {
+            if (other.relatedToTableName != null)
+                return false;
+        } else if (!relatedToTableName.equals(other.relatedToTableName))
+            return false;
+        if (relationColumn == null) {
+            if (other.relationColumn != null)
+                return false;
+        } else if (!relationColumn.equals(other.relationColumn))
+            return false;
+        if (tableName == null) {
+            if (other.tableName != null)
+                return false;
+        } else if (!tableName.equals(other.tableName))
+            return false;
+        return true;
+    }
+    
+    
+
 }

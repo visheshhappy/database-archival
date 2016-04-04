@@ -25,4 +25,6 @@ public interface ArchivalDbDao {
 
     Long getArchivalInQueryCountResult(RelationTable nextRelation, Set inQuerySet) throws BusinessException;
 
+    Long getArchivedDataCount(String tableName, String column, Set primaryKeySet) throws BusinessException;
+
 }

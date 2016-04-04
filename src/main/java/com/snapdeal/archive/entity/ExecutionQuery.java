@@ -5,6 +5,7 @@
 package com.snapdeal.archive.entity;
 
 import java.io.Serializable;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -29,7 +30,7 @@ public class ExecutionQuery implements Serializable {
     private static final long serialVersionUID = -606866641016323760L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", unique = true, nullable = false)
     private int               id;
 
@@ -52,15 +53,26 @@ public class ExecutionQuery implements Serializable {
         SUCCESSFUL, FAILED, PERMANANTLY_FAILED;
     }
 
+    public enum QueryType {
+        INSERT, DELETE;
+    }
+
+    @Column(name = "query_type")
+    @Enumerated(EnumType.STRING)
+    private QueryType queryType;
+
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private Status    status;
 
     @Column(name = "exception_message")
-    private String exceptionMessage;
+    private String    exceptionMessage;
 
     @Transient
-    private String criteriaWithoutSpace;
+    private String    criteriaWithoutSpace;
+
+    @Column(name = "created_date")
+    private Date      createdDate;
 
     public String getTableName() {
         return tableName;
@@ -104,11 +116,6 @@ public class ExecutionQuery implements Serializable {
         this.completeQuery = completeQuery;
     }
 
-    @Override
-    public String toString() {
-        return "FailedQuery [tableName=" + tableName + ", criteria=" + criteria + ", start=" + start + ", batchSize=" + batchSize + ", completeQuery=" + completeQuery + "]";
-    }
-
     public int getId() {
         return id;
     }
@@ -133,11 +140,29 @@ public class ExecutionQuery implements Serializable {
         this.exceptionMessage = exceptionMessage;
     }
 
+    public QueryType getQueryType() {
+        return queryType;
+    }
+
+    public void setQueryType(QueryType queryType) {
+        this.queryType = queryType;
+    }
+
+    public Date getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Date createdDate) {
+        this.createdDate = createdDate;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((batchSize == null) ? 0 : batchSize.hashCode());
         result = prime * result + ((criteriaWithoutSpace == null) ? 0 : criteriaWithoutSpace.hashCode());
+        result = prime * result + ((queryType == null) ? 0 : queryType.hashCode());
         result = prime * result + ((start == null) ? 0 : start.hashCode());
         result = prime * result + ((status == null) ? 0 : status.hashCode());
         result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
@@ -153,10 +178,17 @@ public class ExecutionQuery implements Serializable {
         if (getClass() != obj.getClass())
             return false;
         ExecutionQuery other = (ExecutionQuery) obj;
+        if (batchSize == null) {
+            if (other.batchSize != null)
+                return false;
+        } else if (!batchSize.equals(other.batchSize))
+            return false;
         if (criteriaWithoutSpace == null) {
             if (other.criteriaWithoutSpace != null)
                 return false;
         } else if (!criteriaWithoutSpace.equals(other.criteriaWithoutSpace))
+            return false;
+        if (queryType != other.queryType)
             return false;
         if (start == null) {
             if (other.start != null)
@@ -171,6 +203,13 @@ public class ExecutionQuery implements Serializable {
         } else if (!tableName.equals(other.tableName))
             return false;
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "ExecutionQuery [id=" + id + ", tableName=" + tableName + ", criteria=" + criteria + ", start=" + start + ", batchSize=" + batchSize + ", completeQuery="
+                + completeQuery + ", queryType=" + queryType + ", status=" + status + ", exceptionMessage=" + exceptionMessage + ", criteriaWithoutSpace=" + criteriaWithoutSpace
+                + ", createdDate=" + createdDate + "]";
     }
 
 }

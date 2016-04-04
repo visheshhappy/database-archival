@@ -19,6 +19,7 @@ import com.snapdeal.archive.dao.MasterDbDao;
 import com.snapdeal.archive.dao.RelationDao;
 import com.snapdeal.archive.dto.ExecutionStats;
 import com.snapdeal.archive.entity.ExecutionQuery;
+import com.snapdeal.archive.entity.ExecutionQuery.QueryType;
 import com.snapdeal.archive.entity.ExecutionQuery.Status;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
@@ -65,13 +66,13 @@ public class ArchivalServiceImpl implements ArchivalService {
         while (start < totalObjects) {
             try {
                 start = batchArchivalProcess(baseCriteria, batchSize, tt, rt, start);
-                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.SUCCESSFUL,null);
+                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.SUCCESSFUL,null, QueryType.INSERT);
                 executionStats.get().getSuccessfulCompletedQueryList().add(fq);
                 // successfulCompletedQueryList.add(fq);
             } catch (Exception e) {
                 SystemLog.logException(e.getMessage());
                 SystemLog.logMessage("Adding failed batch to list and to the Database with status as FAILED to be executed later");
-                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage());
+                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage(), QueryType.INSERT);
                
                 // If it was already in this list.. dont save it to DB
                 if(!executionStats.get().getFailedQueryList().contains(fq)){
@@ -113,7 +114,7 @@ public class ArchivalServiceImpl implements ArchivalService {
                 SystemLog.logException(ex.getMessage());
                 SystemLog.logMessage("Adding permanantly failed batch to list with status as PERMANANT_FAILED This will not be executed again..Look for this manually");
                 ExecutionQuery permanantlyFailed = getExecutionQueryPOJO(fq.getTableName(), fq.getCriteria(), fq.getStart(), fq.getBatchSize(),
-                        ExecutionQuery.Status.PERMANANTLY_FAILED,ex.getMessage());
+                        ExecutionQuery.Status.PERMANANTLY_FAILED,ex.getMessage(), QueryType.INSERT);
                 
              // If it was already in this list.. dont save it to DB
                 if(!executionStats.get().getPermanantFailedQueryList().contains(fq)){
@@ -135,12 +136,9 @@ public class ArchivalServiceImpl implements ArchivalService {
         batchTracker.startTracking();
         String criteria = baseCriteria + " limit " + start + "," + batchSize;
         List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
-        executionStats.get().getTableResultMap().put(rt.getTableName(), result);
+        executionStats.get().getTableResultMap().put(rt, result);
         pushData(rt, result, baseCriteria);
-
-        Boolean isDataVerified = verifyBasedOnCount(rt, criteria);
-        SystemLog.logMessage("The verification status for batch size :" + start + " to :" + batchSize + " is : @@@@ " + isDataVerified);
-
+        verifyBasedOnCount();
         start = start + batchSize;
 
         batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");
@@ -161,22 +159,31 @@ public class ArchivalServiceImpl implements ArchivalService {
         return start;
     }
 
-    private ExecutionQuery getExecutionQueryPOJO(String tableName, String baseCriteria, long start, Long batchSize, Status status, String exceptionMessage) {
+    private ExecutionQuery getExecutionQueryPOJO(String tableName, String baseCriteria, long start, Long batchSize, Status status, String exceptionMessage, QueryType queryType) {
         ExecutionQuery fq = new ExecutionQuery();
         fq.setBatchSize(batchSize);
         fq.setCriteria(baseCriteria);
         fq.setStart(start);
         fq.setTableName(tableName);
         fq.setStatus(status);
-        fq.setCompleteQuery("select * from " + tableName + " where " + baseCriteria + " limit " + start + "," + batchSize);
+        switch (queryType) {
+            case INSERT:
+                fq.setCompleteQuery("SELECT * from " + tableName + " where " + baseCriteria + " limit " + start + "," + batchSize);
+                break;
+            case DELETE:
+                fq.setCompleteQuery("DELETE  from " + tableName + " where " + baseCriteria + " limit " + start + "," + batchSize);
+            default:
+                break;
+        }
         fq.setExceptionMessage(exceptionMessage);
+        fq.setQueryType(queryType);
         return fq;
     }
 
     private void archieveData(String tableName, String criteria) throws BusinessException {
         RelationTable rt = relationDao.getRelationShipTableByTableName(tableName, 0);
         List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
-        executionStats.get().getTableResultMap().put(rt.getTableName(), result);
+        executionStats.get().getTableResultMap().put(rt, result);
         pushData(rt, result, criteria);
     }
 
@@ -193,9 +200,9 @@ public class ArchivalServiceImpl implements ArchivalService {
                 batchTracker.startTracking();
                 String criteria = baseCriteria + " limit " + start + "," + batchSize;
                 List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
-                executionStats.get().getTableResultMap().put(rt.getTableName(), result);
+                executionStats.get().getTableResultMap().put(rt, result);
                 pushData(rt, result, baseCriteria);
-                Boolean isVerified = verifyBasedOnCount(rt, baseCriteria);
+                Boolean isVerified = verifyBasedOnCount();
                 if (isVerified) {
                     deleteData(rt, result, criteria);
                 }
@@ -210,7 +217,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             }catch(Exception e){
                 SystemLog.logException(e.getMessage());
                 SystemLog.logMessage("Adding failed batch to list and to the Database with status as FAILED to be executed later");
-                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage());
+                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage(), QueryType.INSERT);
                 // If it was already in this list.. dont save it to DB
                 if(!executionStats.get().getFailedQueryList().contains(fq)){
                     relationDao.saveExecutionQuery(fq);
@@ -244,17 +251,15 @@ public class ArchivalServiceImpl implements ArchivalService {
                 batchTracker.startTracking();
                 String criteria = baseCriteria + " limit " + start + "," + batchSize;
                 List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
-                executionStats.get().getTableResultMap().put(rt.getTableName(), result);
+                executionStats.get().getTableResultMap().put(rt, result);
                 deleteData(rt, result, criteria);
                 start = start + batchSize;
                 batchTracker.trackTimeInMinutes("=====================================================================\n Time to delete data of batch size " + batchSize + " is : ");
                 SystemLog.logMessage("============================================================================");
-
-               
             }catch(Exception e){
                 SystemLog.logException(e.getMessage());
                 SystemLog.logMessage("Adding failed batch to list and to the Database with status as FAILED to be executed later");
-                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage());
+                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage(), QueryType.DELETE);
                 // If it was already in this list.. dont save it to DB
                 if(!executionStats.get().getFailedQueryList().contains(fq)){
                     relationDao.saveExecutionQuery(fq);
@@ -268,82 +273,73 @@ public class ArchivalServiceImpl implements ArchivalService {
         }
         
         SystemLog.logMessage("Trying failed tasks..total failed batch size is : " + executionStats.get().getFailedQueryList().size());
-        tryFailedTasks(tt);
+        tryDeleteFailedTasks(tt);
         
         tt.trackTimeInMinutes("********************************************************************\n Total time taken to Delete data is : ");
         SystemLog.logMessage("**************************************************************************************");
     }
 
-    /*private Boolean test(RelationTable rt,String baseCriteria){
-        if(tableResultMap.get(rt.getTableName()).size()==insertedTableResultCountMap.get(rt.getTableName())){
-            List<Map<String, Object>> masterResult = tableResultMap.get(rt.getTableName());
-            List<Map<String, Object>> archivalResult = masterResult; 
-            return verifyBasedOnCount(rt,baseCriteria,masterResult,archivalResult);        
-        }
-        else{
-            return false;
-        }
-    }*/
+    private void tryDeleteFailedTasks(TimeTracker tt) throws BusinessException {
 
-    /*private Boolean verifyBasedOnCount(RelationTable rt, String baseCriteria, List<Map<String, Object>> masterResult, List<Map<String, Object>> archivalResult) {
-        Iterator<RelationTable> iterator = rt.getRelations().iterator();
-        while (iterator.hasNext()) {
-            RelationTable nextRelation = iterator.next();
-            Set inQuerySet = getInQuerySet(masterResult, nextRelation);
-            Set inQueryForArchivalSet = getInQuerySet(archivalResult, nextRelation);
-            Long inQueryMasterCountResult = archivalDao.getMasterInQueryCountResult(nextRelation,inQuerySet);
-            Long inQueryArchivalCountResult = archivalDao.getArchivalInQueryCountResult(nextRelation,inQueryForArchivalSet);
-            if(!inQueryMasterCountResult.equals(inQueryArchivalCountResult)){
-                return false;
+        Map<String, RelationTable> tableRelationMap = new HashMap<>();
+        for (ExecutionQuery fq : executionStats.get().getFailedQueryList()) {
+            RelationTable rt = null;
+            if (tableRelationMap.get(fq.getTableName()) == null) {
+                rt = relationDao.getRelationShipTableByTableName(fq.getTableName(), 0);
+                tableRelationMap.put(fq.getTableName(), rt);
+            } else {
+                rt = tableRelationMap.get(fq.getTableName());
             }
-           return verifyBasedOnCount(nextRelation, baseCriteria,);
-        }
-        
-        return true;
-    }*/
-
-    private Boolean verifyBasedOnCount(RelationTable rt, String baseCriteria) {
-
-        SystemLog.logMessage("Calling verifyBasedOnCount() method for : " + rt.getTableName());
-
-        /*Long masterCount  =  getCountFromMaster(rt.getTableName(), baseCriteria);
-        Long archivalCount = getArchivalCount(rt.getTableName(),baseCriteria);
-        if(!masterCount.equals(archivalCount)){
-            return false;
-        }
-        
-        if (rt.getForeignRelations() != null && !rt.getForeignRelations().isEmpty()) {
-            for (RelationTable foreignRelation : rt.getForeignRelations()) {
-                String criteria = getNestedCriteria(foreignRelation, rt, baseCriteria);
-                Boolean isVerified = verifyArchivalCount(foreignRelation, criteria);
-                if(!isVerified){
-                    return false;
+            try {
+                List<Map<String, Object>> result = masterDbDao.getResult(rt, fq.getCriteria());
+                deleteData(rt, result, fq.getCriteria());
+            } catch (Exception ex) {
+                SystemLog.logException(ex.getMessage());
+                SystemLog.logMessage("Adding permanantly failed batch to list with status as PERMANANT_FAILED This will not be executed again..Look for this manually");
+                ExecutionQuery permanantlyFailed = getExecutionQueryPOJO(fq.getTableName(), fq.getCriteria(), fq.getStart(), fq.getBatchSize(),
+                        ExecutionQuery.Status.PERMANANTLY_FAILED,ex.getMessage(), QueryType.DELETE);
+                
+             // If it was already in this list.. dont save it to DB
+                if(!executionStats.get().getPermanantFailedQueryList().contains(fq)){
+                    relationDao.saveExecutionQuery(permanantlyFailed);
                 }
+                // add to failed list
+                executionStats.get().getPermanantFailedQueryList().add(permanantlyFailed);
+            } finally {
+                // clear the table result map for each batch processing..
+                executionStats.get().getTableResultMap().clear();
             }
-        }
-        
-        Iterator<RelationTable> iterator = rt.getRelations().iterator();
-        while (iterator.hasNext()) {
-            RelationTable nextRelation = iterator.next();
-            Set inQuerySet = getInQuerySet(tableResultMap.get(rt.getTableName()), nextRelation);
-            Long inQueryMasterCountResult = archivalDao.getMasterInQueryCountResult(nextRelation,inQuerySet);
-            Long inQueryArchivalCountResult = archivalDao.getArchivalInQueryCountResult(nextRelation,inQuerySet);
-            if(!inQueryMasterCountResult.equals(inQueryArchivalCountResult)){
-                return false;
-            }
-           return verifyBasedOnCount(nextRelation, baseCriteria,start,batchSize);
-        }
-        
-        return true;*/
 
-        for (String tableName : executionStats.get().getTableResultMap().keySet()) {
-            int masterDataSize = executionStats.get().getTableResultMap().get(tableName).size();
-            int archivedDataSize = executionStats.get().getInsertedTableResultCountMap().get(tableName);
-            if (masterDataSize != archivedDataSize) {
+        }
+    }
+
+    private Boolean verifyBasedOnCount() throws BusinessException {
+
+        SystemLog.logMessage("Calling verifyBasedOnCount() method : " );
+
+        for (RelationTable rt : executionStats.get().getTableResultMap().keySet()) {
+            List<Map<String,Object>> resultMap = executionStats.get().getTableResultMap().get(rt);
+            
+            // TODO : get this from relationship table..
+            // Cache the RelationTable based on table Name.. hardcoding it for now.
+            String primaryKey = rt.getPrimaryColumn();
+            
+            Set primaryKeySet = getPrimaryKeySetFromResultMap(primaryKey,resultMap);
+            Long archivedDataCount = archivalDbDao.getArchivedDataCount(rt.getTableName(),primaryKey,primaryKeySet);
+            Integer masterDataSize = executionStats.get().getTableResultMap().get(rt).size();
+            
+            SystemLog.logMessage("Master count for table :"+rt.getTableName()+" is : "+masterDataSize+". Archival count = "+archivedDataCount);
+            
+            if (masterDataSize.longValue() != archivedDataCount) {
                 return Boolean.FALSE;
             }
         }
         return Boolean.TRUE;
+    }
+
+    private Set getPrimaryKeySetFromResultMap(String primaryKey, List<Map<String, Object>> resultMap) {
+        Set<Object> set = ArchivalUtil.getPropertySetForListOfMap(resultMap, primaryKey);
+        return set;
     }
 
     @Override
@@ -372,7 +368,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             return false;
         }
 
-        return verifyBasedOnCount(rt, criteria);
+        return verifyBasedOnCount();
     }
 
     private void deleteData(RelationTable rt, List<Map<String, Object>> result, String criteria) throws BusinessException {
@@ -391,7 +387,7 @@ public class ArchivalServiceImpl implements ArchivalService {
 
     private void deleteData(RelationTable rt, String criteria) throws BusinessException {
         List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
-        executionStats.get().getTableResultMap().put(rt.getTableName(), result);
+        executionStats.get().getTableResultMap().put(rt, result);
         deleteData(rt, result, criteria);
     }
 
@@ -421,7 +417,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             RelationTable nextRelation = iterator.next();
             Set inQuerySet = getInQuerySet(result, nextRelation);
             List<Map<String, Object>> newResult = masterDbDao.getInQueryResult(nextRelation, inQuerySet);
-            executionStats.get().getTableResultMap().put(nextRelation.getTableName(), newResult);
+            executionStats.get().getTableResultMap().put(nextRelation, newResult);
             pushData(nextRelation, newResult, criteria);
         }
     }
@@ -472,7 +468,7 @@ public class ArchivalServiceImpl implements ArchivalService {
 
     private List<Map<String, Object>> getFilteredResult(RelationTable foreignRelation, RelationTable parentRelation) {
         if (foreignRelation == null || foreignRelation.getRelationColumn() == null) {
-            return executionStats.get().getTableResultMap().get(foreignRelation.getTableName());
+            return executionStats.get().getTableResultMap().get(foreignRelation);
         }
 
         return filterResult(foreignRelation, getFilteredResult(parentRelation, parentRelation.getParentRelation()));
@@ -481,7 +477,7 @@ public class ArchivalServiceImpl implements ArchivalService {
 
     @SuppressWarnings("unused")
     private List<Map<String, Object>> filterResult(RelationTable foreignRelation, List<Map<String, Object>> parentFilteredResult) {
-        List<Map<String, Object>> childFilteredResult = executionStats.get().getTableResultMap().get(foreignRelation.getTableName());
+        List<Map<String, Object>> childFilteredResult = executionStats.get().getTableResultMap().get(foreignRelation);
         if (childFilteredResult == null || childFilteredResult.isEmpty()) {
             return parentFilteredResult;
         }
