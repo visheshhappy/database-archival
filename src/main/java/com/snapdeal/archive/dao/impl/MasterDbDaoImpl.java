@@ -8,10 +8,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
-import org.hibernate.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.SimpleJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -20,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.snapdeal.archive.dao.MasterDbDao;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
+import com.snapdeal.archive.util.ArchivalUtil;
 import com.snapdeal.archive.util.SystemLog;
 import com.snapdeal.archive.util.TimeTracker;
 
@@ -28,7 +28,6 @@ import com.snapdeal.archive.util.TimeTracker;
  * @author vishesh
  */
 @Service
-@Transactional("masterTransactionManager")
 public class MasterDbDaoImpl implements MasterDbDao {
 
     @Autowired
@@ -38,6 +37,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
     private SimpleJdbcTemplate archivalJdbcTemplate;
 
     @Override
+    @Transactional("masterTransactionManager")
     public List<Map<String, Object>> getResult(RelationTable rt, String criteria) throws BusinessException {
         String query = "select * from " + rt.getTableName() + " " + criteria;
         SystemLog.logMessage("Getting Result for query.!!! \n " + query);
@@ -55,9 +55,10 @@ public class MasterDbDaoImpl implements MasterDbDao {
     }
 
     @Override
+    @Transactional("masterTransactionManager")
     public List<Map<String, Object>> getInQueryResult(RelationTable rt, Set inQuerySet) throws BusinessException {
         Map<String, Object> queryParams = new HashMap<String, Object>();
-
+        
         try {
             String query = "select * from " + rt.getTableName() + " where " + rt.getRelationColumn() + " IN (:inQuerySet)";
             queryParams.put("inQuerySet", inQuerySet);
@@ -162,4 +163,124 @@ public class MasterDbDaoImpl implements MasterDbDao {
         return 0L;
     }
 
+    @Override
+    @Transactional("masterTransactionManager") // change this to masterTransactionalManager once the it is fully tested and ready for production
+    public void markResultsToBeArchived(RelationTable rt,String criteria,Long limitSize) {
+      TimeTracker tt= new TimeTracker();
+      tt.startTracking();
+      String query = "update "+rt.getTableName()+" set is_archived=? "+criteria+" and (is_archived is null or is_archived =0) limit "+limitSize;
+      
+      SystemLog.logMessage("Query to be executed is : "+ query);
+      
+      List<Object[]> batchArgs = new ArrayList<>();
+      Object[] objArr = new Object[1];
+      objArr[0]=1;
+      batchArgs.add(objArr);
+      int[] result =  simpleJdbcTemplate.batchUpdate(query, batchArgs);
+   
+      SystemLog.logMessage("result size = " + result.length);
+      tt.trackTimeInSeconds("Time taken to update table : "+ rt.getTableName() +" is : ");
+        
+    }
+
+    @Override
+    @Transactional("masterTransactionManager") // change this to masterTransactionalManager once the it is fully tested and ready for production
+    public void markRelatedResultToArchive(RelationTable rt,Set<Object> primaryKeyNotInSet) {
+        
+       /* if(rt.getTableName().equalsIgnoreCase("suborder_type") || rt.getTableName().equalsIgnoreCase("order_status")){
+            return;
+        }*/
+        
+        RelationTable parentRelation = rt.getParentRelation();
+        String parentRelationPrimaryKeyNotInQuery = "";
+        if(parentRelation!=null && primaryKeyNotInSet!=null){
+            parentRelationPrimaryKeyNotInQuery = "and " + getParentRelationPrimaryKeyNotInQuery(parentRelation,primaryKeyNotInSet,"t2");
+        }
+        TimeTracker tt= new TimeTracker();
+        tt.startTracking();
+      
+        // Get audit fields. The value of these field needs to be preserved
+        String auditFieldClause = getAuditFieldClause(rt);
+        
+        String query = "update "+rt.getTableName()+" t1 inner join "+rt.getRelatedToTableName()+" t2 set t1.is_archived=? "+auditFieldClause+" where t1."+rt.getRelationColumn()+"=t2."+rt.getRelatedToColumnName()+" and "
+                + "t2.is_archived=1 and (t1.is_archived =0 or t1.is_archived is null) "+parentRelationPrimaryKeyNotInQuery;
+        SystemLog.logMessage("Query to be executed is : "+ query);
+    
+        List<Object[]> batchArgs = new ArrayList<>();
+        Object[] objArr = new Object[1];
+        objArr[0]=1;
+        batchArgs.add(objArr);
+        int[] result =  simpleJdbcTemplate.batchUpdate(query, batchArgs);
+        SystemLog.logMessage("result size = " + result.length);
+        tt.trackTimeInSeconds("Time taken to update table : "+ rt.getTableName() +" is : ");
+        
+    }
+
+    private String getParentRelationPrimaryKeyNotInQuery(RelationTable parentRelation, Set<Object> primaryKeyNotInSet, String tableName) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(tableName).append(".").append(parentRelation.getPrimaryColumn()).append(" not in (");
+        
+        StringBuilder notInQuery = new StringBuilder();
+        for(Object obj : primaryKeyNotInSet){
+            notInQuery.append("'"+obj.toString()+"',");
+        }
+        String notInQr = notInQuery.toString();
+        notInQr = notInQr.substring(0, notInQr.length()-1);
+        
+        builder.append(notInQr).append(")");
+        return builder.toString();
+        
+    }
+
+    private String getAuditFieldClause(RelationTable rt) {
+        
+        Set<String> auditFields = rt.getAuditFieldSet();
+        // No audit Field clause if the set is empty
+        if(auditFields.isEmpty()){
+            return "";
+        }
+        
+        StringBuilder auditFieldBuilder = new StringBuilder();
+        auditFieldBuilder.append(", ");
+        for(String auditField : auditFields){
+            auditFieldBuilder.append("t1.").append(auditField).append("=").append("t1.").append(auditField).append(" , ");
+        }
+        
+        String auditFieldClause = auditFieldBuilder.toString();
+        auditFieldClause = auditFieldClause.substring(0, auditFieldClause.length() - 2);
+        return auditFieldClause;
+    }
+    
+    @Override
+    @Transactional("masterTransactionManager") // change this to masterTransactionalManager once the it is fully tested and ready for production
+    public  Set<Object> getPrimaryKeyResultsToBeArchived(RelationTable rt,String criteria,Long limitSize) {
+      TimeTracker tt= new TimeTracker();
+      tt.startTracking();
+      String query = "select "+rt.getPrimaryColumn()+" from "+rt.getTableName()+" "+criteria+" and (is_archived is null or is_archived =0) limit "+limitSize;
+      SystemLog.logMessage("Query to be executed is : "+ query);
+      Map<String,Object> args = new HashMap<>();
+      List<Map<String, Object>> result =  simpleJdbcTemplate.queryForList(query, args);
+      tt.trackTimeInSeconds("Time taken to update table : "+ rt.getTableName() +" is : ");
+      Set<Object> primaryKeySet = ArchivalUtil.getPropertySetForListOfMap(result, rt.getPrimaryColumn());
+      return primaryKeySet;
+        
+    }
+    
+    @Override
+    @Transactional("masterTransactionManager") // change this to masterTransactionalManager once the it is fully tested and ready for production
+    public  Set<Object> getRelatedPrimaryKeyResultToArchive(RelationTable rt) {
+        
+        TimeTracker tt= new TimeTracker();
+        tt.startTracking();
+        
+        String query = "select t1."+rt.getPrimaryColumn()+" from "+rt.getTableName()+" t1 inner join "+rt.getRelatedToTableName()+" t2  where t1."+rt.getRelationColumn()+"=t2."+rt.getRelatedToColumnName()+" and "
+                + "t2.is_archived=1 and (t1.is_archived =0 or t1.is_archived is null) ";
+        SystemLog.logMessage("Query to be executed is : "+ query);
+        Map<String,Object> args = new HashMap<>();
+        List<Map<String, Object>> result =  simpleJdbcTemplate.queryForList(query, args);
+        tt.trackTimeInSeconds("Time taken to update table : "+ rt.getTableName() +" is : ");
+        Set<Object> primaryKeySet = ArchivalUtil.getPropertySetForListOfMap(result, rt.getPrimaryColumn());
+        return primaryKeySet;
+        
+    }
 }

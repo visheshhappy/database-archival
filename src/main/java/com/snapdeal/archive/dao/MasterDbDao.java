@@ -27,4 +27,16 @@ public interface MasterDbDao {
 
     Long getMasterInQueryCountResult(RelationTable nextRelation, Set inQuerySet) throws BusinessException;
 
+    
+    
+    
+    // The method below uses is_archived strategy
+    void markResultsToBeArchived(RelationTable rt,String criteria, Long limitSize);
+    
+    void markRelatedResultToArchive(RelationTable rt, Set<Object> primaryKeyNotInSet);
+
+    Set<Object> getRelatedPrimaryKeyResultToArchive(RelationTable rt);
+
+    Set<Object> getPrimaryKeyResultsToBeArchived(RelationTable rt, String criteria, Long limitSize);
+
 }

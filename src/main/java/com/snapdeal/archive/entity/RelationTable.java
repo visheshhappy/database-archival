@@ -7,6 +7,7 @@ package com.snapdeal.archive.entity;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -19,6 +20,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  * @version 1.0, 10-Mar-2016
@@ -75,6 +77,29 @@ public class RelationTable implements Serializable {
 
     @Column(name = "deletion_allowed")
     private Boolean            isDeletionAllowed;
+
+    @Column(name = "audit_fields")
+    private String             auditFields;
+
+    public String getAuditFields() {
+        return auditFields;
+    }
+
+    public void setAuditFields(String auditFields) {
+        this.auditFields = auditFields;
+    }
+
+    public Set<String> getAuditFieldSet() {
+        if(this.auditFields==null){
+            return new HashSet<>();
+        }
+        Set<String> auditFieldSet = new HashSet<>();
+        StringTokenizer tokenizer = new StringTokenizer(this.auditFields, ",");
+        while(tokenizer.hasMoreTokens()){
+            auditFieldSet.add(tokenizer.nextToken());
+        }
+        return auditFieldSet;
+    }
 
     public String getTableName() {
         return tableName;
@@ -241,7 +266,5 @@ public class RelationTable implements Serializable {
             return false;
         return true;
     }
-    
-    
 
 }

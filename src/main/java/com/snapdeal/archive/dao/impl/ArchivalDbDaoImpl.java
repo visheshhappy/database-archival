@@ -37,6 +37,9 @@ public class ArchivalDbDaoImpl implements ArchivalDbDao {
 
     @Autowired
     private SessionFactory     archivalDBSessionFactory;
+    
+    @Autowired
+    private SimpleJdbcTemplate simpleJdbcTemplate;
 
     @Override
     @Transactional("archivalTransactionManager")
@@ -168,6 +171,23 @@ public class ArchivalDbDaoImpl implements ArchivalDbDao {
         }
 
         return 0L;
+    }
+
+    @Override
+    @Transactional("masterTransactionManager")
+    public void alterTable(String tableName, String columnName, String columnType, Boolean toAdd) throws BusinessException {
+        try{
+            TimeTracker tt = new TimeTracker();
+            tt.startTracking();
+            String query = "ALTER TABLE "+tableName+" ADD COLUMN "+columnName+" "+columnType;
+            Map<String,?> map = new HashMap<>();
+            simpleJdbcTemplate.update(query, map);
+            tt.trackTimeInSeconds("-----------Time taken to alter table"+tableName+" is : ");
+        }catch(Exception e){
+            SystemLog.logException(e.getMessage());
+        }
+      
+        
     }
 
 }

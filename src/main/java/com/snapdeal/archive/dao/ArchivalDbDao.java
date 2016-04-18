@@ -27,4 +27,5 @@ public interface ArchivalDbDao {
 
     Long getArchivedDataCount(String tableName, String column, Set primaryKeySet) throws BusinessException;
 
+    void alterTable(String tableName, String columnName, String columnType,Boolean toAdd) throws BusinessException;
 }

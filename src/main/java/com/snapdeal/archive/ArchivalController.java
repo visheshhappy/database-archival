@@ -1,7 +1,7 @@
 /**
  *  Copyright 2016 Jasper Infotech (P) Limited . All Rights Reserved.
  *  JASPER INFOTECH PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
- */  
+ */
 package com.snapdeal.archive;
 
 import java.io.IOException;
@@ -24,31 +24,37 @@ import com.snapdeal.archive.service.ArchivalService;
 import com.snapdeal.archive.util.SystemLog;
 
 /**
- *  
- *  @version     1.0, 16-Mar-2016
- *  @author vishesh
+ * @version 1.0, 16-Mar-2016
+ * @author vishesh
  */
 @Controller
 public class ArchivalController {
-    
+
     @Autowired
-    private RelationDao relationDao;
-    
+    private RelationDao     relationDao;
+
     @Autowired
     private ArchivalService archivalService;
-        
+
     @RequestMapping("/getRelations")
     @ResponseBody
-    public List<RelationTable> getRelations() throws BusinessException{
-        
-        List<RelationTable> relationTables= relationDao.getRelations();
-        return  relationTables;
+    public List<RelationTable> getRelations() throws BusinessException {
+
+        List<RelationTable> relationTables = relationDao.getRelations();
+        return relationTables;
     }
-    
+
     @RequestMapping("/home")
-    public String homePage(){
-        
+    public String homePage() {
+
         return "home";
+    }
+
+    @RequestMapping("/getRelation/{tableName}")
+    @ResponseBody
+    public RelationTable getRelationByTableName(@PathVariable("tableName") String tableName) throws BusinessException {
+        RelationTable rt = archivalService.getRelationTableByTableName(tableName);
+        return rt;
     }
 
     @RequestMapping("/execute")
@@ -58,16 +64,16 @@ public class ArchivalController {
         String tableName = request.getParameter("tableName");
         switch (action) {
             case "archive":
-                request.getRequestDispatcher("/archivedata/"+tableName+"/"+batchSize).forward(request, response);
+                request.getRequestDispatcher("/archivedata/" + tableName + "/" + batchSize).forward(request, response);
                 break;
             case "delete":
-                request.getRequestDispatcher("/delete/"+tableName+"/"+batchSize).forward(request, response);
+                request.getRequestDispatcher("/delete/" + tableName + "/" + batchSize).forward(request, response);
                 break;
             case "archieveAndDelete":
-                request.getRequestDispatcher("/archive/verify/delete/"+tableName+"/"+batchSize).forward(request, response);
+                request.getRequestDispatcher("/archive/verify/delete/" + tableName + "/" + batchSize).forward(request, response);
                 break;
             case "count":
-                request.getRequestDispatcher("/count/"+tableName).forward(request, response);
+                request.getRequestDispatcher("/count/" + tableName).forward(request, response);
                 break;
             default:
                 break;
@@ -75,43 +81,42 @@ public class ArchivalController {
 
         return "home";
     }
-    
+
     @RequestMapping("/archivedata/{tableName}/{batchSize}")
-    public String archieveData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws NumberFormatException, BusinessException{
+    public String archieveData(HttpServletRequest request, @PathVariable("tableName") String tableName, @PathVariable("batchSize") String batchSize)
+            throws NumberFormatException, BusinessException {
         SystemLog.logMessage("Table name is  : " + tableName);
-        String criteria = "where "+ request.getParameter("whereClause") ;
-        archivalService.archieveMasterData(tableName,criteria,Long.valueOf(batchSize));    
+        String criteria = "where " + request.getParameter("whereClause");
+        archivalService.archieveMasterData(tableName, criteria, Long.valueOf(batchSize));
         return "home";
     }
-    
+
     @RequestMapping("/archive/verify/delete/{tableName}/{batchSize}")
-    public String archieveVerifyAndDeleteData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws BusinessException{
+    public String archieveVerifyAndDeleteData(HttpServletRequest request, @PathVariable("tableName") String tableName, @PathVariable("batchSize") String batchSize)
+            throws BusinessException {
         SystemLog.logMessage("Table name is  : " + tableName);
-        String criteria = "where "+ request.getParameter("whereClause") ;
+        String criteria = "where " + request.getParameter("whereClause");
         Long batch = Long.valueOf(batchSize);
-        archivalService.archieveVerifyAndDeleteData(tableName,criteria,batch);
+        archivalService.archieveVerifyAndDeleteData(tableName, criteria, batch);
         return "home";
     }
-    
+
     @RequestMapping("/delete/{tableName}/{batchSize}")
-    public String deleteData(HttpServletRequest request,@PathVariable("tableName") String tableName,@PathVariable("batchSize") String batchSize) throws BusinessException{
+    public String deleteData(HttpServletRequest request, @PathVariable("tableName") String tableName, @PathVariable("batchSize") String batchSize) throws BusinessException {
         SystemLog.logMessage("Table name is  : " + tableName);
-        String criteria = "where "+ request.getParameter("whereClause") ;
+        String criteria = "where " + request.getParameter("whereClause");
         Long batch = Long.valueOf(batchSize);
-        archivalService.deleteMasterData(tableName,criteria,batch);
+        archivalService.deleteMasterData(tableName, criteria, batch);
         return "home";
     }
-    
+
     @RequestMapping("/count/{tableName}")
     @ResponseBody
-    public Long getCount(HttpServletRequest request, @PathVariable("tableName") String tableName) throws BusinessException{
+    public Long getCount(HttpServletRequest request, @PathVariable("tableName") String tableName) throws BusinessException {
         SystemLog.logMessage("Table name is  : " + tableName);
-        String criteria = "where "+ request.getParameter("whereClause") ;
-        Long count = archivalService.getCountFromMaster(tableName,criteria);
+        String criteria = "where " + request.getParameter("whereClause");
+        Long count = archivalService.getCountFromMaster(tableName, criteria);
         return count;
     }
-    
-    
-    
 
 }

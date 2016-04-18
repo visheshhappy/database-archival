@@ -22,11 +22,14 @@ import com.snapdeal.archive.entity.RelationTable;
 public final class ExecutionStats {
 
     private Map<RelationTable, List<Map<String, Object>>> tableResultMap;
-    private Map<String, Integer>                   insertedTableResultCountMap;
-    private Set<ExecutionQuery>                    failedQueryList;
-    private Set<ExecutionQuery>                    permanantFailedQueryList;
-    private Set<ExecutionQuery>                    successfulCompletedQueryList;
-    private Long                                   totalArchivedCount;
+    private Map<String, Integer>                          insertedTableResultCountMap;
+    private Set<ExecutionQuery>                           failedQueryList;
+    private Set<ExecutionQuery>                           permanantFailedQueryList;
+    private Set<ExecutionQuery>                           successfulCompletedQueryList;
+    private Long                                          totalArchivedCount;
+
+    // For is_archived strategy
+    private Map<String, Set<Object>>                      tableToPrimaryKeySetMap;
 
     public ExecutionStats() {
         this.tableResultMap = new HashMap<>();
@@ -35,7 +38,7 @@ public final class ExecutionStats {
         this.permanantFailedQueryList = new HashSet<>();
         this.successfulCompletedQueryList = new HashSet<>();
         this.totalArchivedCount = 0L;
-
+        this.tableToPrimaryKeySetMap = new HashMap<>();
     }
 
     public Map<RelationTable, List<Map<String, Object>>> getTableResultMap() {
@@ -64,6 +67,10 @@ public final class ExecutionStats {
 
     public void setTotalArchivedCount(Long totalArchivedCount) {
         this.totalArchivedCount = totalArchivedCount;
+    }
+
+    public Map<String, Set<Object>> getTableToPrimaryKeySetMap() {
+        return tableToPrimaryKeySetMap;
     }
 
 }

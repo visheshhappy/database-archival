@@ -63,9 +63,13 @@ public class ArchivalServiceImpl implements ArchivalService {
         }
         Long totalObjects = getCountFromMaster(tableName, baseCriteria);
         long start = 0;
+        SystemLog.logMessage("Total "+tableName+" Objects to archive is  : " + totalObjects);
+      //  pushTopLevelData(rt,baseCriteria);
+        
         while (start < totalObjects) {
             try {
-                start = batchArchivalProcess(baseCriteria, batchSize, tt, rt, start);
+                start = batchArchivalUpdateProcess(rt,baseCriteria,start,batchSize,tt,rt);
+               // start = batchArchivalProcess(baseCriteria, batchSize, tt, rt, start);
                 ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.SUCCESSFUL,null, QueryType.INSERT);
                 executionStats.get().getSuccessfulCompletedQueryList().add(fq);
                 // successfulCompletedQueryList.add(fq);
@@ -96,6 +100,24 @@ public class ArchivalServiceImpl implements ArchivalService {
 
         SystemLog.logMessage("Permanantly failed query list is  : " + executionStats.get().getPermanantFailedQueryList());
 
+    }
+
+    private long batchArchivalUpdateProcess(RelationTable rt, String baseCriteria, long start, Long batchSize, TimeTracker tt, RelationTable rt2) {
+     
+        
+        TimeTracker batchTracker = new TimeTracker();
+        batchTracker.startTracking();
+        String criteria = baseCriteria;
+        pushTopLevelData(rt,criteria,batchSize);
+        start = start + batchSize;
+
+        batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");
+        SystemLog.logMessage("============================================================================");
+
+        tt.trackTimeInMinutes("********************************************************\n Total time elapsed since process was started is : ");
+        SystemLog.logMessage("*********************************************************");
+        return start;
+        
     }
 
     private void tryFailedTasks(TimeTracker tt) throws BusinessException {
@@ -320,8 +342,6 @@ public class ArchivalServiceImpl implements ArchivalService {
         for (RelationTable rt : executionStats.get().getTableResultMap().keySet()) {
             List<Map<String,Object>> resultMap = executionStats.get().getTableResultMap().get(rt);
             
-            // TODO : get this from relationship table..
-            // Cache the RelationTable based on table Name.. hardcoding it for now.
             String primaryKey = rt.getPrimaryColumn();
             
             Set primaryKeySet = getPrimaryKeySetFromResultMap(primaryKey,resultMap);
@@ -405,6 +425,34 @@ public class ArchivalServiceImpl implements ArchivalService {
             }
         }
 
+    }
+    
+    private  void pushTopLevelData(RelationTable rt, String criteria, Long limitSize){
+        Set<Object> result = masterDbDao.getPrimaryKeyResultsToBeArchived(rt, criteria, limitSize);
+        executionStats.get().getTableToPrimaryKeySetMap().put(rt.getTableName(), result);
+        masterDbDao.markResultsToBeArchived(rt,criteria,limitSize);
+        updateArchivalColumn(rt);
+    }
+    
+    private void updateArchivalColumn(RelationTable rt) {
+
+        if (rt.getForeignRelations() != null && !rt.getForeignRelations().isEmpty()) {
+            for (RelationTable foreignRelation : rt.getForeignRelations()) {
+                Set<Object> result = masterDbDao.getRelatedPrimaryKeyResultToArchive(foreignRelation);
+                executionStats.get().getTableToPrimaryKeySetMap().put(foreignRelation.getTableName(), result);
+                masterDbDao.markRelatedResultToArchive(foreignRelation, executionStats.get().getTableToPrimaryKeySetMap().get(foreignRelation.getRelatedToTableName()));
+                updateArchivalColumn(foreignRelation);
+            }
+        }
+
+        Iterator<RelationTable> iterator = rt.getRelations().iterator();
+        while (iterator.hasNext()) {
+            RelationTable nextRelation = iterator.next();
+            Set<Object> result = masterDbDao.getRelatedPrimaryKeyResultToArchive(nextRelation);
+            executionStats.get().getTableToPrimaryKeySetMap().put(nextRelation.getTableName(), result);
+            masterDbDao.markRelatedResultToArchive(nextRelation, executionStats.get().getTableToPrimaryKeySetMap().get(nextRelation.getRelatedToTableName()));
+            updateArchivalColumn(nextRelation);
+        }
     }
 
     private void pushData(RelationTable rt, List<Map<String, Object>> result, String criteria) throws BusinessException {
@@ -539,7 +587,33 @@ public class ArchivalServiceImpl implements ArchivalService {
 
     @Override
     public RelationTable getRelationTableByTableName(String tableName) throws BusinessException {
-        return relationDao.getRelationShipTableByTableName(tableName, 0);
+        RelationTable rt =  relationDao.getRelationShipTableByTableName(tableName, 0);        
+        return rt;
+    }
+    
+    private void alterTable(RelationTable rt){
+        String tableName = rt.getTableName();
+        String columnName = "is_archived";
+        String columnType = "int(1)";
+        try{
+            archivalDbDao.alterTable(tableName,columnName,columnType,Boolean.TRUE);
+            if (rt.getForeignRelations() != null && !rt.getForeignRelations().isEmpty()) {
+                for (RelationTable foreignRelation : rt.getForeignRelations()) {
+                    archivalDbDao.alterTable(foreignRelation.getTableName(),columnName,columnType,Boolean.TRUE);
+                  alterTable(foreignRelation);
+                }
+            }
+            
+            Iterator<RelationTable> iterator = rt.getRelations().iterator();
+            while (iterator.hasNext()) {
+
+               RelationTable nextRelation = iterator.next();
+               archivalDbDao.alterTable(nextRelation.getTableName(),columnName,columnType,Boolean.TRUE);
+              alterTable(nextRelation);
+            }
+        }catch(Exception e){
+            SystemLog.logException(e.getMessage());
+        }
     }
 
 }
