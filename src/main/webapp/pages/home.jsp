@@ -18,6 +18,11 @@
 	<span>Enter the batch size</span>
 	<input type="text" name="batchSize" />
 	<br />
+	<select name="strategy">
+		<option value="columnStrategy">Column Strategy</option>
+		<option value="Direct_DbPagination">Direct (Using Db Pagination)</option>
+		<option value="Direct_SystemCache">Direct (Pagination at Java side)</option>
+	</select>
 	<select name="action">
 		<option value="archive">Archive</option>
 		<option value="delete">Delete</option>

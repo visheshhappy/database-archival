@@ -14,6 +14,10 @@ import java.util.Set;
 
 import org.apache.commons.beanutils.PropertyUtils;
 
+import com.snapdeal.archive.entity.ExecutionQuery;
+import com.snapdeal.archive.entity.ExecutionQuery.QueryType;
+import com.snapdeal.archive.entity.ExecutionQuery.Status;
+
 /**
  *  
  *  @version     1.0, 10-Mar-2016
@@ -99,6 +103,27 @@ public class ArchivalUtil {
             set.add(obj);
         }
         return set;
+    }
+    
+    public static ExecutionQuery getExecutionQueryPOJO(String tableName, String baseCriteria, long start, Long batchSize, Status status, String exceptionMessage, QueryType queryType) {
+        ExecutionQuery fq = new ExecutionQuery();
+        fq.setBatchSize(batchSize);
+        fq.setCriteria(baseCriteria);
+        fq.setStart(start);
+        fq.setTableName(tableName);
+        fq.setStatus(status);
+        switch (queryType) {
+            case INSERT:
+                fq.setCompleteQuery("SELECT * from " + tableName + " where " + baseCriteria + " limit " + start + "," + batchSize);
+                break;
+            case DELETE:
+                fq.setCompleteQuery("DELETE  from " + tableName + " where " + baseCriteria + " limit " + start + "," + batchSize);
+            default:
+                break;
+        }
+        fq.setExceptionMessage(exceptionMessage);
+        fq.setQueryType(queryType);
+        return fq;
     }
 
 }

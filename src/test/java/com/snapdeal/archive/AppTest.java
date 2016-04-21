@@ -10,8 +10,8 @@ import junit.framework.TestSuite;
 /**
  * Unit test for simple App.
  */
-//@RunWith(Suite.class)
-//@Suite.SuiteClasses({ ArchiveDaoTest.class })
+@RunWith(Suite.class)
+@Suite.SuiteClasses({ ArchiveDaoTest.class })
 public class AppTest extends TestCase {
     /**
      * Create the test case
