@@ -14,7 +14,7 @@
   <display-name>Spring Web Security Application</display-name>
   <context-param>
     <param-name>contextConfigLocation</param-name>
-    <param-value>/WEB-INF/spring/applicationContext.xml
+    <param-value>classpath:/spring/applicationContext.xml
 	</param-value>
   </context-param>
   <listener>
@@ -43,7 +43,7 @@
 		</servlet-class>
 	 <init-param>
           <param-name>contextConfigLocation</param-name>
-          <param-value>/WEB-INF/spring/applicationContext.xml</param-value>
+          <param-value>classpath:/spring/applicationContext.xml</param-value>
         </init-param>
     <load-on-startup>1</load-on-startup>
   </servlet>

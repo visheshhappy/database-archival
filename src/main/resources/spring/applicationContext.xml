@@ -15,7 +15,7 @@
 	<context:annotation-config></context:annotation-config>
 
 	<bean id="repDataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
-		<property name="jndiName" value="java:comp/env/jdbc/DatabseArchival" />
+		<property name="jndiName" value="java:comp/env/jdbc/DatabaseArchival" />
 		<property name="resourceRef" value="true" />
 
 	</bean>

@@ -18,9 +18,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.snapdeal.archive.dao.RelationDao;
+import com.snapdeal.archive.dto.ArchivalStrategyType;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
+import com.snapdeal.archive.factory.ArchivalFactory;
 import com.snapdeal.archive.service.ArchivalService;
+import com.snapdeal.archive.service.RelationTableService;
 import com.snapdeal.archive.util.SystemLog;
 
 /**
@@ -33,8 +36,14 @@ public class ArchivalController {
     @Autowired
     private RelationDao     relationDao;
 
+    /*@Autowired
+    private ArchivalService archivalService;*/
+    
     @Autowired
-    private ArchivalService archivalService;
+    private RelationTableService relationTableService;
+    
+    @Autowired
+    private ArchivalFactory archivalFactory;
 
     @RequestMapping("/getRelations")
     @ResponseBody
@@ -53,7 +62,7 @@ public class ArchivalController {
     @RequestMapping("/getRelation/{tableName}")
     @ResponseBody
     public RelationTable getRelationByTableName(@PathVariable("tableName") String tableName) throws BusinessException {
-        RelationTable rt = archivalService.getRelationTableByTableName(tableName);
+        RelationTable rt = relationTableService.getRelationTableByTableName(tableName);
         return rt;
     }
 
@@ -87,8 +96,24 @@ public class ArchivalController {
             throws NumberFormatException, BusinessException {
         SystemLog.logMessage("Table name is  : " + tableName);
         String criteria = "where " + request.getParameter("whereClause");
-        archivalService.archieveMasterData(tableName, criteria, Long.valueOf(batchSize));
+        String strategy = request.getParameter("strategy");
+        ArchivalStrategyType archivalStrategyType = getStrategyType(strategy);
+        archivalFactory.getArchivalService(archivalStrategyType).archieveMasterData(tableName, criteria, Long.valueOf(batchSize));
+     //   archivalService.archieveMasterData(tableName, criteria, Long.valueOf(batchSize));
         return "home";
+    }
+
+    private ArchivalStrategyType getStrategyType(String strategy) {
+        if(strategy.equalsIgnoreCase("columnStrategy")){
+            return ArchivalStrategyType.COLUMN_STRATEGY;
+        }
+        if(strategy.equalsIgnoreCase("Direct_DbPagination")){
+            return ArchivalStrategyType.DIRECT_WITH_DB_PAGINATION_STRATEGY;
+        }
+        if(strategy.equalsIgnoreCase("Direct_SystemCache")){
+            return ArchivalStrategyType.DIRECT_WITH_JAVA_PAGINATION_STRATEGY;
+        }
+        return null;
     }
 
     @RequestMapping("/archive/verify/delete/{tableName}/{batchSize}")
@@ -97,7 +122,9 @@ public class ArchivalController {
         SystemLog.logMessage("Table name is  : " + tableName);
         String criteria = "where " + request.getParameter("whereClause");
         Long batch = Long.valueOf(batchSize);
-        archivalService.archieveVerifyAndDeleteData(tableName, criteria, batch);
+        String strategy = request.getParameter("strategy");
+        ArchivalStrategyType archivalStrategyType = getStrategyType(strategy);
+        archivalFactory.getArchivalService(archivalStrategyType).archieveVerifyAndDeleteData(tableName, criteria, batch);
         return "home";
     }
 
@@ -106,7 +133,9 @@ public class ArchivalController {
         SystemLog.logMessage("Table name is  : " + tableName);
         String criteria = "where " + request.getParameter("whereClause");
         Long batch = Long.valueOf(batchSize);
-        archivalService.deleteMasterData(tableName, criteria, batch);
+        String strategy = request.getParameter("strategy");
+        ArchivalStrategyType archivalStrategyType = getStrategyType(strategy);
+        archivalFactory.getArchivalService(archivalStrategyType).deleteMasterData(tableName, criteria, batch);
         return "home";
     }
 
@@ -115,7 +144,9 @@ public class ArchivalController {
     public Long getCount(HttpServletRequest request, @PathVariable("tableName") String tableName) throws BusinessException {
         SystemLog.logMessage("Table name is  : " + tableName);
         String criteria = "where " + request.getParameter("whereClause");
-        Long count = archivalService.getCountFromMaster(tableName, criteria);
+        String strategy = request.getParameter("strategy");
+        ArchivalStrategyType archivalStrategyType = getStrategyType(strategy);
+        Long count = archivalFactory.getArchivalService(archivalStrategyType).getCountFromMaster(tableName, criteria);
         return count;
     }
 

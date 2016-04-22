@@ -4,7 +4,6 @@
  */
 package com.snapdeal.archive.service;
 
-import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
 
 /**
@@ -21,10 +20,10 @@ public interface ArchivalService {
 
     Long getCountFromMaster(String tableName, String criteria) throws BusinessException ;
 
-    RelationTable getRelationTableByTableName(String tableName) throws BusinessException ;
-
-    void archieveMasterData(String tableName, String criteria, Long batchSize) throws BusinessException ;
+   /* RelationTable getRelationTableByTableName(String tableName) throws BusinessException ;*/
 
     Long getArchivalCount(String tableName, String baseCriteria) throws BusinessException ;
+
+    void archieveMasterData(String tableName, String baseCriteria, Long batchSize) throws BusinessException;
 
 }

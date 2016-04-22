@@ -17,12 +17,14 @@ import org.springframework.stereotype.Service;
 import com.snapdeal.archive.dao.ArchivalDbDao;
 import com.snapdeal.archive.dao.MasterDbDao;
 import com.snapdeal.archive.dao.RelationDao;
+import com.snapdeal.archive.dto.ArchivalStrategyType;
 import com.snapdeal.archive.dto.ExecutionStats;
 import com.snapdeal.archive.entity.ExecutionQuery;
 import com.snapdeal.archive.entity.ExecutionQuery.QueryType;
 import com.snapdeal.archive.entity.ExecutionQuery.Status;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
+import com.snapdeal.archive.service.AbstractArchivalService;
 import com.snapdeal.archive.service.ArchivalService;
 import com.snapdeal.archive.util.ArchivalUtil;
 import com.snapdeal.archive.util.SystemLog;
@@ -32,8 +34,8 @@ import com.snapdeal.archive.util.TimeTracker;
  * @version 1.0, 10-Mar-2016
  * @author vishesh
  */
-@Service
-public class ArchivalServiceImpl implements ArchivalService {
+@Service("archivalService")
+public class ArchivalServiceImpl extends AbstractArchivalService {
 
     @Autowired
     private ArchivalDbDao               archivalDbDao;
@@ -64,19 +66,18 @@ public class ArchivalServiceImpl implements ArchivalService {
         Long totalObjects = getCountFromMaster(tableName, baseCriteria);
         long start = 0;
         SystemLog.logMessage("Total "+tableName+" Objects to archive is  : " + totalObjects);
-      //  pushTopLevelData(rt,baseCriteria);
         
         while (start < totalObjects) {
             try {
-                start = batchArchivalUpdateProcess(rt,baseCriteria,start,batchSize,tt,rt);
-               // start = batchArchivalProcess(baseCriteria, batchSize, tt, rt, start);
-                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.SUCCESSFUL,null, QueryType.INSERT);
+             //   start = batchArchivalUpdateProcess(rt,baseCriteria,start,batchSize,tt,rt);
+                start = batchArchivalProcess(baseCriteria, batchSize, tt, rt, start);
+                ExecutionQuery fq = ArchivalUtil.getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.SUCCESSFUL,null, QueryType.INSERT);
                 executionStats.get().getSuccessfulCompletedQueryList().add(fq);
                 // successfulCompletedQueryList.add(fq);
             } catch (Exception e) {
                 SystemLog.logException(e.getMessage());
                 SystemLog.logMessage("Adding failed batch to list and to the Database with status as FAILED to be executed later");
-                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage(), QueryType.INSERT);
+                ExecutionQuery fq = ArchivalUtil.getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage(), QueryType.INSERT);
                
                 // If it was already in this list.. dont save it to DB
                 if(!executionStats.get().getFailedQueryList().contains(fq)){
@@ -102,7 +103,7 @@ public class ArchivalServiceImpl implements ArchivalService {
 
     }
 
-    private long batchArchivalUpdateProcess(RelationTable rt, String baseCriteria, long start, Long batchSize, TimeTracker tt, RelationTable rt2) {
+   /* private long batchArchivalUpdateProcess(RelationTable rt, String baseCriteria, long start, Long batchSize, TimeTracker tt, RelationTable rt2) {
      
         
         TimeTracker batchTracker = new TimeTracker();
@@ -118,7 +119,7 @@ public class ArchivalServiceImpl implements ArchivalService {
         SystemLog.logMessage("*********************************************************");
         return start;
         
-    }
+    }*/
 
     private void tryFailedTasks(TimeTracker tt) throws BusinessException {
         Map<String, RelationTable> tableRelationMap = new HashMap<>();
@@ -135,7 +136,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             } catch (Exception ex) {
                 SystemLog.logException(ex.getMessage());
                 SystemLog.logMessage("Adding permanantly failed batch to list with status as PERMANANT_FAILED This will not be executed again..Look for this manually");
-                ExecutionQuery permanantlyFailed = getExecutionQueryPOJO(fq.getTableName(), fq.getCriteria(), fq.getStart(), fq.getBatchSize(),
+                ExecutionQuery permanantlyFailed = ArchivalUtil.getExecutionQueryPOJO(fq.getTableName(), fq.getCriteria(), fq.getStart(), fq.getBatchSize(),
                         ExecutionQuery.Status.PERMANANTLY_FAILED,ex.getMessage(), QueryType.INSERT);
                 
              // If it was already in this list.. dont save it to DB
@@ -181,27 +182,6 @@ public class ArchivalServiceImpl implements ArchivalService {
         return start;
     }
 
-    private ExecutionQuery getExecutionQueryPOJO(String tableName, String baseCriteria, long start, Long batchSize, Status status, String exceptionMessage, QueryType queryType) {
-        ExecutionQuery fq = new ExecutionQuery();
-        fq.setBatchSize(batchSize);
-        fq.setCriteria(baseCriteria);
-        fq.setStart(start);
-        fq.setTableName(tableName);
-        fq.setStatus(status);
-        switch (queryType) {
-            case INSERT:
-                fq.setCompleteQuery("SELECT * from " + tableName + " where " + baseCriteria + " limit " + start + "," + batchSize);
-                break;
-            case DELETE:
-                fq.setCompleteQuery("DELETE  from " + tableName + " where " + baseCriteria + " limit " + start + "," + batchSize);
-            default:
-                break;
-        }
-        fq.setExceptionMessage(exceptionMessage);
-        fq.setQueryType(queryType);
-        return fq;
-    }
-
     private void archieveData(String tableName, String criteria) throws BusinessException {
         RelationTable rt = relationDao.getRelationShipTableByTableName(tableName, 0);
         List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
@@ -239,7 +219,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             }catch(Exception e){
                 SystemLog.logException(e.getMessage());
                 SystemLog.logMessage("Adding failed batch to list and to the Database with status as FAILED to be executed later");
-                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage(), QueryType.INSERT);
+                ExecutionQuery fq = ArchivalUtil.getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage(), QueryType.INSERT);
                 // If it was already in this list.. dont save it to DB
                 if(!executionStats.get().getFailedQueryList().contains(fq)){
                     relationDao.saveExecutionQuery(fq);
@@ -281,7 +261,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             }catch(Exception e){
                 SystemLog.logException(e.getMessage());
                 SystemLog.logMessage("Adding failed batch to list and to the Database with status as FAILED to be executed later");
-                ExecutionQuery fq = getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage(), QueryType.DELETE);
+                ExecutionQuery fq = ArchivalUtil.getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.FAILED,e.getMessage(), QueryType.DELETE);
                 // If it was already in this list.. dont save it to DB
                 if(!executionStats.get().getFailedQueryList().contains(fq)){
                     relationDao.saveExecutionQuery(fq);
@@ -318,7 +298,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             } catch (Exception ex) {
                 SystemLog.logException(ex.getMessage());
                 SystemLog.logMessage("Adding permanantly failed batch to list with status as PERMANANT_FAILED This will not be executed again..Look for this manually");
-                ExecutionQuery permanantlyFailed = getExecutionQueryPOJO(fq.getTableName(), fq.getCriteria(), fq.getStart(), fq.getBatchSize(),
+                ExecutionQuery permanantlyFailed = ArchivalUtil.getExecutionQueryPOJO(fq.getTableName(), fq.getCriteria(), fq.getStart(), fq.getBatchSize(),
                         ExecutionQuery.Status.PERMANANTLY_FAILED,ex.getMessage(), QueryType.DELETE);
                 
              // If it was already in this list.. dont save it to DB
@@ -362,11 +342,11 @@ public class ArchivalServiceImpl implements ArchivalService {
         return set;
     }
 
-    @Override
+    /*@Override
     public Long getArchivalCount(String tableName, String baseCriteria) throws BusinessException {
         Long count = archivalDbDao.getCountFromArchival(tableName, baseCriteria);
         return count;
-    }
+    }*/
 
     @Override
     public boolean verifyArchivedData(String tableName, String criteria, Long batchSize) throws BusinessException {
@@ -427,7 +407,7 @@ public class ArchivalServiceImpl implements ArchivalService {
 
     }
     
-    private  void pushTopLevelData(RelationTable rt, String criteria, Long limitSize){
+   /* private  void pushTopLevelData(RelationTable rt, String criteria, Long limitSize){
         Set<Object> result = masterDbDao.getPrimaryKeyResultsToBeArchived(rt, criteria, limitSize);
         executionStats.get().getTableToPrimaryKeySetMap().put(rt.getTableName(), result);
         masterDbDao.markResultsToBeArchived(rt,criteria,limitSize);
@@ -453,7 +433,7 @@ public class ArchivalServiceImpl implements ArchivalService {
             masterDbDao.markRelatedResultToArchive(nextRelation, executionStats.get().getTableToPrimaryKeySetMap().get(nextRelation.getRelatedToTableName()));
             updateArchivalColumn(nextRelation);
         }
-    }
+    }*/
 
     private void pushData(RelationTable rt, List<Map<String, Object>> result, String criteria) throws BusinessException {
 
@@ -578,20 +558,20 @@ public class ArchivalServiceImpl implements ArchivalService {
         return set;
     }
 
-    @Override
+   /* @Override
     public Long getCountFromMaster(String tableName, String criteria) throws BusinessException {
         Long count = masterDbDao.getCountFromMaster(tableName, criteria);
         return count;
 
-    }
+    }*/
 
-    @Override
+   /* @Override
     public RelationTable getRelationTableByTableName(String tableName) throws BusinessException {
         RelationTable rt =  relationDao.getRelationShipTableByTableName(tableName, 0);        
         return rt;
-    }
+    }*/
     
-    private void alterTable(RelationTable rt){
+   /* private void alterTable(RelationTable rt){
         String tableName = rt.getTableName();
         String columnName = "is_archived";
         String columnType = "int(1)";
@@ -614,6 +594,6 @@ public class ArchivalServiceImpl implements ArchivalService {
         }catch(Exception e){
             SystemLog.logException(e.getMessage());
         }
-    }
+    }*/
 
 }
