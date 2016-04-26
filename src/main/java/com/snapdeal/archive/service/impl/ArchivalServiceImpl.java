@@ -17,15 +17,12 @@ import org.springframework.stereotype.Service;
 import com.snapdeal.archive.dao.ArchivalDbDao;
 import com.snapdeal.archive.dao.MasterDbDao;
 import com.snapdeal.archive.dao.RelationDao;
-import com.snapdeal.archive.dto.ArchivalStrategyType;
 import com.snapdeal.archive.dto.ExecutionStats;
 import com.snapdeal.archive.entity.ExecutionQuery;
 import com.snapdeal.archive.entity.ExecutionQuery.QueryType;
-import com.snapdeal.archive.entity.ExecutionQuery.Status;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
 import com.snapdeal.archive.service.AbstractArchivalService;
-import com.snapdeal.archive.service.ArchivalService;
 import com.snapdeal.archive.util.ArchivalUtil;
 import com.snapdeal.archive.util.SystemLog;
 import com.snapdeal.archive.util.TimeTracker;
@@ -34,8 +31,8 @@ import com.snapdeal.archive.util.TimeTracker;
  * @version 1.0, 10-Mar-2016
  * @author vishesh
  */
-@Service("archivalService")
-public class ArchivalServiceImpl extends AbstractArchivalService {
+//@Service("archivalService")
+public abstract class ArchivalServiceImpl extends AbstractArchivalService {
 
     @Autowired
     private ArchivalDbDao               archivalDbDao;
@@ -46,14 +43,14 @@ public class ArchivalServiceImpl extends AbstractArchivalService {
     @Autowired
     private RelationDao                 relationDao;
 
-    private ThreadLocal<ExecutionStats> executionStats  = new ThreadLocal<ExecutionStats>(){
+    protected ThreadLocal<ExecutionStats> executionStats  = new ThreadLocal<ExecutionStats>(){
         protected ExecutionStats initialValue() {
             return new ExecutionStats();
         }
     };
 
     @Override
-    public void archieveMasterData(String tableName, String baseCriteria, Long batchSize) throws BusinessException {
+    public abstract void archieveMasterData(String tableName, String baseCriteria, Long batchSize) throws BusinessException; /*{
 
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
@@ -69,11 +66,9 @@ public class ArchivalServiceImpl extends AbstractArchivalService {
         
         while (start < totalObjects) {
             try {
-             //   start = batchArchivalUpdateProcess(rt,baseCriteria,start,batchSize,tt,rt);
                 start = batchArchivalProcess(baseCriteria, batchSize, tt, rt, start);
                 ExecutionQuery fq = ArchivalUtil.getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.SUCCESSFUL,null, QueryType.INSERT);
                 executionStats.get().getSuccessfulCompletedQueryList().add(fq);
-                // successfulCompletedQueryList.add(fq);
             } catch (Exception e) {
                 SystemLog.logException(e.getMessage());
                 SystemLog.logMessage("Adding failed batch to list and to the Database with status as FAILED to be executed later");
@@ -102,26 +97,8 @@ public class ArchivalServiceImpl extends AbstractArchivalService {
         SystemLog.logMessage("Permanantly failed query list is  : " + executionStats.get().getPermanantFailedQueryList());
 
     }
-
-   /* private long batchArchivalUpdateProcess(RelationTable rt, String baseCriteria, long start, Long batchSize, TimeTracker tt, RelationTable rt2) {
-     
-        
-        TimeTracker batchTracker = new TimeTracker();
-        batchTracker.startTracking();
-        String criteria = baseCriteria;
-        pushTopLevelData(rt,criteria,batchSize);
-        start = start + batchSize;
-
-        batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");
-        SystemLog.logMessage("============================================================================");
-
-        tt.trackTimeInMinutes("********************************************************\n Total time elapsed since process was started is : ");
-        SystemLog.logMessage("*********************************************************");
-        return start;
-        
-    }*/
-
-    private void tryFailedTasks(TimeTracker tt) throws BusinessException {
+*/
+    protected void tryFailedTasks(TimeTracker tt) throws BusinessException {
         Map<String, RelationTable> tableRelationMap = new HashMap<>();
         for (ExecutionQuery fq : executionStats.get().getFailedQueryList()) {
             RelationTable rt = null;
@@ -315,7 +292,7 @@ public class ArchivalServiceImpl extends AbstractArchivalService {
         }
     }
 
-    private Boolean verifyBasedOnCount() throws BusinessException {
+    protected Boolean verifyBasedOnCount() throws BusinessException {
 
         SystemLog.logMessage("Calling verifyBasedOnCount() method : " );
 
@@ -341,12 +318,6 @@ public class ArchivalServiceImpl extends AbstractArchivalService {
         Set<Object> set = ArchivalUtil.getPropertySetForListOfMap(resultMap, primaryKey);
         return set;
     }
-
-    /*@Override
-    public Long getArchivalCount(String tableName, String baseCriteria) throws BusinessException {
-        Long count = archivalDbDao.getCountFromArchival(tableName, baseCriteria);
-        return count;
-    }*/
 
     @Override
     public boolean verifyArchivedData(String tableName, String criteria, Long batchSize) throws BusinessException {
@@ -406,36 +377,8 @@ public class ArchivalServiceImpl extends AbstractArchivalService {
         }
 
     }
-    
-   /* private  void pushTopLevelData(RelationTable rt, String criteria, Long limitSize){
-        Set<Object> result = masterDbDao.getPrimaryKeyResultsToBeArchived(rt, criteria, limitSize);
-        executionStats.get().getTableToPrimaryKeySetMap().put(rt.getTableName(), result);
-        masterDbDao.markResultsToBeArchived(rt,criteria,limitSize);
-        updateArchivalColumn(rt);
-    }
-    
-    private void updateArchivalColumn(RelationTable rt) {
 
-        if (rt.getForeignRelations() != null && !rt.getForeignRelations().isEmpty()) {
-            for (RelationTable foreignRelation : rt.getForeignRelations()) {
-                Set<Object> result = masterDbDao.getRelatedPrimaryKeyResultToArchive(foreignRelation);
-                executionStats.get().getTableToPrimaryKeySetMap().put(foreignRelation.getTableName(), result);
-                masterDbDao.markRelatedResultToArchive(foreignRelation, executionStats.get().getTableToPrimaryKeySetMap().get(foreignRelation.getRelatedToTableName()));
-                updateArchivalColumn(foreignRelation);
-            }
-        }
-
-        Iterator<RelationTable> iterator = rt.getRelations().iterator();
-        while (iterator.hasNext()) {
-            RelationTable nextRelation = iterator.next();
-            Set<Object> result = masterDbDao.getRelatedPrimaryKeyResultToArchive(nextRelation);
-            executionStats.get().getTableToPrimaryKeySetMap().put(nextRelation.getTableName(), result);
-            masterDbDao.markRelatedResultToArchive(nextRelation, executionStats.get().getTableToPrimaryKeySetMap().get(nextRelation.getRelatedToTableName()));
-            updateArchivalColumn(nextRelation);
-        }
-    }*/
-
-    private void pushData(RelationTable rt, List<Map<String, Object>> result, String criteria) throws BusinessException {
+    protected void pushData(RelationTable rt, List<Map<String, Object>> result, String criteria) throws BusinessException {
 
         SystemLog.logMessage("Calling pushData() method for : " + rt.getTableName());
         insertIntoArchivalDb(rt, result, criteria, rt.getParentRelation());
@@ -557,43 +500,4 @@ public class ArchivalServiceImpl extends AbstractArchivalService {
         SystemLog.logMessage("Fetched in query set for " + rt.getTableName() + " Total count is : " + set.size());
         return set;
     }
-
-   /* @Override
-    public Long getCountFromMaster(String tableName, String criteria) throws BusinessException {
-        Long count = masterDbDao.getCountFromMaster(tableName, criteria);
-        return count;
-
-    }*/
-
-   /* @Override
-    public RelationTable getRelationTableByTableName(String tableName) throws BusinessException {
-        RelationTable rt =  relationDao.getRelationShipTableByTableName(tableName, 0);        
-        return rt;
-    }*/
-    
-   /* private void alterTable(RelationTable rt){
-        String tableName = rt.getTableName();
-        String columnName = "is_archived";
-        String columnType = "int(1)";
-        try{
-            archivalDbDao.alterTable(tableName,columnName,columnType,Boolean.TRUE);
-            if (rt.getForeignRelations() != null && !rt.getForeignRelations().isEmpty()) {
-                for (RelationTable foreignRelation : rt.getForeignRelations()) {
-                    archivalDbDao.alterTable(foreignRelation.getTableName(),columnName,columnType,Boolean.TRUE);
-                  alterTable(foreignRelation);
-                }
-            }
-            
-            Iterator<RelationTable> iterator = rt.getRelations().iterator();
-            while (iterator.hasNext()) {
-
-               RelationTable nextRelation = iterator.next();
-               archivalDbDao.alterTable(nextRelation.getTableName(),columnName,columnType,Boolean.TRUE);
-              alterTable(nextRelation);
-            }
-        }catch(Exception e){
-            SystemLog.logException(e.getMessage());
-        }
-    }*/
-
 }

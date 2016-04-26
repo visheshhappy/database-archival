@@ -19,8 +19,12 @@ import com.snapdeal.archive.service.ArchivalService;
 public class ArchivalFactory {
 
     @Autowired
-    @Qualifier("archivalService")
-    private ArchivalService archivalService;
+    @Qualifier("archivalServiceDBPaginationStrategy")
+    private ArchivalService archivalServiceDBPaginationStrategy;
+
+    @Autowired
+    @Qualifier("archivalServiceSystemCacheStrategy")
+    private ArchivalService archivalServiceSystemCacheStrategy;
 
     @Autowired
     @Qualifier("archivalServiceUpdateColumn")
@@ -31,9 +35,9 @@ public class ArchivalFactory {
             case COLUMN_STRATEGY:
                 return archivalServiceUpdateColumn;
             case DIRECT_WITH_DB_PAGINATION_STRATEGY:
-                return archivalService;
+                return archivalServiceDBPaginationStrategy;
             case DIRECT_WITH_JAVA_PAGINATION_STRATEGY:
-                return null;
+                return archivalServiceSystemCacheStrategy;
         }
         return null;
     }

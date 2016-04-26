@@ -27,7 +27,7 @@ import com.snapdeal.archive.util.TimeTracker;
  * @author vishesh
  */
 @Service("archivalServiceUpdateColumn")
-public class ArchivalUpdateStrategyServiceImpl extends AbstractArchivalService {
+public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService {
 
     @Autowired
     private MasterDbDao                 masterDbDao;
@@ -150,5 +150,30 @@ public class ArchivalUpdateStrategyServiceImpl extends AbstractArchivalService {
             updateArchivalColumn(nextRelation);
         }
     }
+
+    /* private void alterTable(RelationTable rt){
+    String tableName = rt.getTableName();
+    String columnName = "is_archived";
+    String columnType = "int(1)";
+    try{
+        archivalDbDao.alterTable(tableName,columnName,columnType,Boolean.TRUE);
+        if (rt.getForeignRelations() != null && !rt.getForeignRelations().isEmpty()) {
+            for (RelationTable foreignRelation : rt.getForeignRelations()) {
+                archivalDbDao.alterTable(foreignRelation.getTableName(),columnName,columnType,Boolean.TRUE);
+              alterTable(foreignRelation);
+            }
+        }
+        
+        Iterator<RelationTable> iterator = rt.getRelations().iterator();
+        while (iterator.hasNext()) {
+    
+           RelationTable nextRelation = iterator.next();
+           archivalDbDao.alterTable(nextRelation.getTableName(),columnName,columnType,Boolean.TRUE);
+          alterTable(nextRelation);
+        }
+    }catch(Exception e){
+        SystemLog.logException(e.getMessage());
+    }
+    }*/
 
 }
