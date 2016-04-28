@@ -185,17 +185,17 @@ public class MasterDbDaoImpl implements MasterDbDao {
 
     @Override
     @Transactional("masterTransactionManager") // change this to masterTransactionalManager once the it is fully tested and ready for production
-    public void markRelatedResultToArchive(RelationTable rt,Set<Object> primaryKeyNotInSet) {
+    public void markRelatedResultToArchive(RelationTable rt/*,Set<Object> primaryKeyNotInSet*/) {
         
        /* if(rt.getTableName().equalsIgnoreCase("suborder_type") || rt.getTableName().equalsIgnoreCase("order_status")){
             return;
         }*/
         
-        RelationTable parentRelation = rt.getParentRelation();
+       // RelationTable parentRelation = rt.getParentRelation();
         String parentRelationPrimaryKeyNotInQuery = "";
-        if(parentRelation!=null && primaryKeyNotInSet!=null){
+       /* if(parentRelation!=null && primaryKeyNotInSet!=null){
             parentRelationPrimaryKeyNotInQuery = "and " + getParentRelationPrimaryKeyNotInQuery(parentRelation,primaryKeyNotInSet,"t2");
-        }
+        }*/
         TimeTracker tt= new TimeTracker();
         tt.startTracking();
       
@@ -251,7 +251,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
         return auditFieldClause;
     }
     
-    @Override
+    /*@Override
     @Transactional("masterTransactionManager") // change this to masterTransactionalManager once the it is fully tested and ready for production
     public  Set<Object> getPrimaryKeyResultsToBeArchived(RelationTable rt,String criteria,Long limitSize) {
       TimeTracker tt= new TimeTracker();
@@ -282,5 +282,5 @@ public class MasterDbDaoImpl implements MasterDbDao {
         Set<Object> primaryKeySet = ArchivalUtil.getPropertySetForListOfMap(result, rt.getPrimaryColumn());
         return primaryKeySet;
         
-    }
+    }*/
 }

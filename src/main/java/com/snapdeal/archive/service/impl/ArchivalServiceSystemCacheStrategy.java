@@ -88,7 +88,6 @@ public class ArchivalServiceSystemCacheStrategy extends ArchivalServiceImpl {
     private long batchArchivalProcess(String baseCriteria, Long batchSize, TimeTracker tt, RelationTable rt, long start, List<Map<String, Object>> masterResult) throws BusinessException {
         TimeTracker batchTracker = new TimeTracker();
         batchTracker.startTracking();
-   //     String criteria = baseCriteria + " limit " + start + "," + batchSize;
         List<Map<String, Object>> result = getResultSet(masterResult,start,batchSize);
         executionStats.get().getTableResultMap().put(rt, result);
         pushData(rt, result, baseCriteria);

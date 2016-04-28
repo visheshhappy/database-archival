@@ -33,10 +33,10 @@ public interface MasterDbDao {
     // The method below uses is_archived strategy
     void markResultsToBeArchived(RelationTable rt,String criteria, Long limitSize);
     
-    void markRelatedResultToArchive(RelationTable rt, Set<Object> primaryKeyNotInSet);
+    void markRelatedResultToArchive(RelationTable rt/*, Set<Object> primaryKeyNotInSet*/);
 
-    Set<Object> getRelatedPrimaryKeyResultToArchive(RelationTable rt);
+   /* Set<Object> getRelatedPrimaryKeyResultToArchive(RelationTable rt);
 
-    Set<Object> getPrimaryKeyResultsToBeArchived(RelationTable rt, String criteria, Long limitSize);
+    Set<Object> getPrimaryKeyResultsToBeArchived(RelationTable rt, String criteria, Long limitSize);*/
 
 }

@@ -124,8 +124,8 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
     }
 
     private void pushTopLevelData(RelationTable rt, String criteria, Long limitSize) {
-        Set<Object> result = masterDbDao.getPrimaryKeyResultsToBeArchived(rt, criteria, limitSize);
-        executionStats.get().getTableToPrimaryKeySetMap().put(rt.getTableName(), result);
+       // Set<Object> result = masterDbDao.getPrimaryKeyResultsToBeArchived(rt, criteria, limitSize);
+       // executionStats.get().getTableToPrimaryKeySetMap().put(rt.getTableName(), result);
         masterDbDao.markResultsToBeArchived(rt, criteria, limitSize);
         updateArchivalColumn(rt);
     }
@@ -134,9 +134,9 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
 
         if (rt.getForeignRelations() != null && !rt.getForeignRelations().isEmpty()) {
             for (RelationTable foreignRelation : rt.getForeignRelations()) {
-                Set<Object> result = masterDbDao.getRelatedPrimaryKeyResultToArchive(foreignRelation);
-                executionStats.get().getTableToPrimaryKeySetMap().put(foreignRelation.getTableName(), result);
-                masterDbDao.markRelatedResultToArchive(foreignRelation, executionStats.get().getTableToPrimaryKeySetMap().get(foreignRelation.getRelatedToTableName()));
+            //    Set<Object> result = masterDbDao.getRelatedPrimaryKeyResultToArchive(foreignRelation);
+              //  executionStats.get().getTableToPrimaryKeySetMap().put(foreignRelation.getTableName(), result);
+                masterDbDao.markRelatedResultToArchive(foreignRelation/*, executionStats.get().getTableToPrimaryKeySetMap().get(foreignRelation.getRelatedToTableName())*/);
                 updateArchivalColumn(foreignRelation);
             }
         }
@@ -144,9 +144,9 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
         Iterator<RelationTable> iterator = rt.getRelations().iterator();
         while (iterator.hasNext()) {
             RelationTable nextRelation = iterator.next();
-            Set<Object> result = masterDbDao.getRelatedPrimaryKeyResultToArchive(nextRelation);
-            executionStats.get().getTableToPrimaryKeySetMap().put(nextRelation.getTableName(), result);
-            masterDbDao.markRelatedResultToArchive(nextRelation, executionStats.get().getTableToPrimaryKeySetMap().get(nextRelation.getRelatedToTableName()));
+         //   Set<Object> result = masterDbDao.getRelatedPrimaryKeyResultToArchive(nextRelation);
+         //   executionStats.get().getTableToPrimaryKeySetMap().put(nextRelation.getTableName(), result);
+            masterDbDao.markRelatedResultToArchive(nextRelation/*, executionStats.get().getTableToPrimaryKeySetMap().get(nextRelation.getRelatedToTableName())*/);
             updateArchivalColumn(nextRelation);
         }
     }
