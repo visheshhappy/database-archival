@@ -35,6 +35,8 @@ public interface MasterDbDao {
     
     void markRelatedResultToArchive(RelationTable rt/*, Set<Object> primaryKeyNotInSet*/);
 
+    void deleteFromMasterData(RelationTable rt, String criteria);
+
    /* Set<Object> getRelatedPrimaryKeyResultToArchive(RelationTable rt);
 
     Set<Object> getPrimaryKeyResultsToBeArchived(RelationTable rt, String criteria, Long limitSize);*/

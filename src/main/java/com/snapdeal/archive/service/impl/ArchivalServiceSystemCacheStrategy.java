@@ -91,7 +91,6 @@ public class ArchivalServiceSystemCacheStrategy extends ArchivalServiceImpl {
         List<Map<String, Object>> result = getResultSet(masterResult,start,batchSize);
         executionStats.get().getTableResultMap().put(rt, result);
         pushData(rt, result, baseCriteria);
-        verifyBasedOnCount();
         start = start + batchSize;
 
         batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");

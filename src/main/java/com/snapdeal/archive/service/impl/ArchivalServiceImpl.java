@@ -138,7 +138,7 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
         List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
         executionStats.get().getTableResultMap().put(rt, result);
         pushData(rt, result, baseCriteria);
-        verifyBasedOnCount();
+      //  verifyBasedOnCount();
         start = start + batchSize;
 
         batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");
@@ -181,7 +181,7 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
                 List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
                 executionStats.get().getTableResultMap().put(rt, result);
                 pushData(rt, result, baseCriteria);
-                Boolean isVerified = verifyBasedOnCount();
+                Boolean isVerified = verifyBasedOnCount(this.executionStats.get().getTableResultMap());
                 if (isVerified) {
                     deleteData(rt, result, criteria);
                 }
@@ -292,7 +292,7 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
         }
     }
 
-    protected Boolean verifyBasedOnCount() throws BusinessException {
+    /*protected Boolean verifyBasedOnCount() throws BusinessException {
 
         SystemLog.logMessage("Calling verifyBasedOnCount() method : " );
 
@@ -301,7 +301,7 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
             
             String primaryKey = rt.getPrimaryColumn();
             
-            Set primaryKeySet = getPrimaryKeySetFromResultMap(primaryKey,resultMap);
+            Set primaryKeySet = ArchivalUtil.getPropertySetForListOfMap(resultMap, primaryKey);
             Long archivedDataCount = archivalDbDao.getArchivedDataCount(rt.getTableName(),primaryKey,primaryKeySet);
             Integer masterDataSize = executionStats.get().getTableResultMap().get(rt).size();
             
@@ -312,26 +312,14 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
             }
         }
         return Boolean.TRUE;
-    }
-
-    private Set getPrimaryKeySetFromResultMap(String primaryKey, List<Map<String, Object>> resultMap) {
-        Set<Object> set = ArchivalUtil.getPropertySetForListOfMap(resultMap, primaryKey);
-        return set;
-    }
+    }*/
 
     @Override
     public boolean verifyArchivedData(String tableName, String criteria, Long batchSize) throws BusinessException {
-        Long masterCount = masterDbDao.getCountFromMaster(tableName, criteria);
-        Long archivalCount = archivalDbDao.getCountFromArchival(tableName, criteria);
-        if (masterCount.equals(archivalCount)) {
-            RelationTable rt = relationDao.getRelationShipTableByTableName(tableName, 0);
-            return verifyArchivalCount(rt, criteria);
-        }
-        return false;
-
+      throw new UnsupportedOperationException();
     }
 
-    private Boolean verifyArchivalCount(RelationTable rt, String criteria) throws BusinessException {
+   /* private Boolean verifyArchivalCount(RelationTable rt, String criteria) throws BusinessException {
 
         Long masterCount = getCountFromMaster(rt.getTableName(), criteria);
         Long archivalCount = getArchivalCount(rt.getTableName(), criteria);
@@ -340,7 +328,7 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
         }
 
         return verifyBasedOnCount();
-    }
+    }*/
 
     private void deleteData(RelationTable rt, List<Map<String, Object>> result, String criteria) throws BusinessException {
 

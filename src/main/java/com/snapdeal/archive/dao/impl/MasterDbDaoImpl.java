@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.snapdeal.archive.dao.MasterDbDao;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
-import com.snapdeal.archive.util.ArchivalUtil;
 import com.snapdeal.archive.util.SystemLog;
 import com.snapdeal.archive.util.TimeTracker;
 
@@ -216,7 +215,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
         
     }
 
-    private String getParentRelationPrimaryKeyNotInQuery(RelationTable parentRelation, Set<Object> primaryKeyNotInSet, String tableName) {
+   /* private String getParentRelationPrimaryKeyNotInQuery(RelationTable parentRelation, Set<Object> primaryKeyNotInSet, String tableName) {
         StringBuilder builder = new StringBuilder();
         builder.append(tableName).append(".").append(parentRelation.getPrimaryColumn()).append(" not in (");
         
@@ -230,7 +229,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
         builder.append(notInQr).append(")");
         return builder.toString();
         
-    }
+    }*/
 
     private String getAuditFieldClause(RelationTable rt) {
         
@@ -249,6 +248,24 @@ public class MasterDbDaoImpl implements MasterDbDao {
         String auditFieldClause = auditFieldBuilder.toString();
         auditFieldClause = auditFieldClause.substring(0, auditFieldClause.length() - 2);
         return auditFieldClause;
+    }
+
+    @Override
+    @Transactional("masterTransactionManager")
+    public void deleteFromMasterData(RelationTable rt, String criteria) {
+        TimeTracker tt= new TimeTracker();
+        tt.startTracking();
+        String query = "DELETE from "+rt.getTableName()+" "+criteria;
+        
+        List<Object[]> batchArgs = new ArrayList<>();
+        Object[] objArr = new Object[1];
+        objArr[0]=1;
+        batchArgs.add(objArr);
+        /*String query = "update "+rt.getTableName()+" set is_archived=? "+criteria; */
+        SystemLog.logMessage("Executing query : " + query);
+        int [] result = archivalJdbcTemplate.batchUpdate(query, batchArgs);
+        SystemLog.logMessage("Result lenght is "+ result.length);
+        tt.trackTimeInSeconds("Time taken to delete records from  table : "+ rt.getTableName() +" is : ");
     }
     
     /*@Override

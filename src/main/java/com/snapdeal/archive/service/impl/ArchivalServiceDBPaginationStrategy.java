@@ -89,7 +89,6 @@ public class ArchivalServiceDBPaginationStrategy extends ArchivalServiceImpl {
         List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
         executionStats.get().getTableResultMap().put(rt, result);
         pushData(rt, result, baseCriteria);
-        verifyBasedOnCount();
         start = start + batchSize;
 
         batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");
