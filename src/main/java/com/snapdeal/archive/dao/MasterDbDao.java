@@ -31,9 +31,9 @@ public interface MasterDbDao {
     
     
     // The method below uses is_archived strategy
-    void markResultsToBeArchived(RelationTable rt,String criteria, Long limitSize);
+    void markResultsToBeArchived(RelationTable rt,String criteria, Long limitSize,Boolean mark);
     
-    void markRelatedResultToArchive(RelationTable rt/*, Set<Object> primaryKeyNotInSet*/);
+    void markRelatedResultToArchive(RelationTable rt,Boolean mark);
 
     void deleteFromMasterData(RelationTable rt, String criteria);
 

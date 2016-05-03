@@ -12,6 +12,8 @@ import java.util.StringTokenizer;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -20,7 +22,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 
 /**
  * @version 1.0, 10-Mar-2016
@@ -34,7 +35,11 @@ public class RelationTable implements Serializable {
     /**
      * 
      */
-    private static final long  serialVersionUID = -8337054305060495328L;
+    private static final long serialVersionUID = -8337054305060495328L;
+
+    public enum QueryType {
+        JOIN, IN;
+    }
 
     @Column(name = "id")
     @Id
@@ -81,6 +86,18 @@ public class RelationTable implements Serializable {
     @Column(name = "audit_fields")
     private String             auditFields;
 
+    @Column(name = "query_type")
+    @Enumerated(EnumType.STRING)
+    private QueryType          queryType;
+
+    public QueryType getQueryType() {
+        return queryType;
+    }
+
+    public void setQueryType(QueryType queryType) {
+        this.queryType = queryType;
+    }
+
     public String getAuditFields() {
         return auditFields;
     }
@@ -90,12 +107,12 @@ public class RelationTable implements Serializable {
     }
 
     public Set<String> getAuditFieldSet() {
-        if(this.auditFields==null){
+        if (this.auditFields == null) {
             return new HashSet<>();
         }
         Set<String> auditFieldSet = new HashSet<>();
         StringTokenizer tokenizer = new StringTokenizer(this.auditFields, ",");
-        while(tokenizer.hasMoreTokens()){
+        while (tokenizer.hasMoreTokens()) {
             auditFieldSet.add(tokenizer.nextToken());
         }
         return auditFieldSet;

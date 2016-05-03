@@ -78,14 +78,14 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
 
         while (start < totalObjects) {
             try {
+                SystemLog.logMessage("---------Starting the Batch for START = " + start +" of total objects  = "+ totalObjects+"--------");
                 start = batchArchivalUpdateProcess(rt, baseCriteria, start, batchSize, tt, rt);
 
                 SystemLog.logMessage("Initiating data movement to Archival DB..");
-                // move the archived data to the archival DB
                 moveMarkedDataToArchival(rt);
-
+                       
                 // Verify that the data has been moved to archival DB. If not verified try moving the data again.
-                // This way at least it will try to move and verify at most three times. 
+                // This way it will try to move and verify at most three times. 
                 // TODO : The max number of retry count should be moved to some properties file
 
                 int i = 0;
@@ -102,13 +102,17 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
                         i++;
                     }
                 }
-                
+
+                SystemLog.logMessage("Reseting the archival column for foreign relations..");
+                resetForeignRelations(rt,batchSize);
+                SystemLog.logMessage("Reseting the archival column for foreign relations completed...!!");
                 
                 ExecutionQuery fq = ArchivalUtil.getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.SUCCESSFUL, null, QueryType.INSERT);
                 executionStats.get().getSuccessfulCompletedQueryList().add(fq);
                 
-                // FOr testing.. delete the break statement below after testing
-                break;
+                tt.trackTimeInMinutes("********************************************************\n Total time elapsed since process was started is : ");
+                SystemLog.logMessage("*********************************************************");
+                
             } catch (Exception e) {
                 SystemLog.logException(e.getMessage());
                 SystemLog.logMessage("Adding failed batch to list and to the Database with status as FAILED to be executed later");
@@ -116,7 +120,8 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
 
                 // If it was already in this list.. dont save it to DB
                 if (!executionStats.get().getFailedQueryList().contains(fq)) {
-                    relationDao.saveExecutionQuery(fq);
+                    //TODO : commenting this for testing only
+                //    relationDao.saveExecutionQuery(fq);
                 }
                 // add to failed list
                 executionStats.get().getFailedQueryList().add(fq);
@@ -139,6 +144,18 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
 
     }
 
+    private void resetForeignRelations(RelationTable rt, Long batchSize) {
+        if(rt.getForeignRelations()!=null){
+            Iterator<RelationTable> iterator = rt.getForeignRelations().iterator();
+            while(iterator.hasNext()){
+                RelationTable foreignRelation = iterator.next();
+                markArchivalColumnsInMaster(foreignRelation, CRITERIA, batchSize,Boolean.FALSE);
+            }
+        }
+      
+        
+    }
+
     @Override
     public void archieveMasterData(String tableName, String baseCriteria, Long batchSize) throws BusinessException {
         TimeTracker tt = new TimeTracker();
@@ -156,12 +173,11 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
         while (start < totalObjects) {
             try {
                 start = batchArchivalUpdateProcess(rt, baseCriteria, start, batchSize, tt, rt);
-
+                tt.trackTimeInMinutes("********************************************************\n Total time elapsed since process was started is : ");
+                SystemLog.logMessage("*********************************************************");
                 ExecutionQuery fq = ArchivalUtil.getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.SUCCESSFUL, null, QueryType.INSERT);
                 executionStats.get().getSuccessfulCompletedQueryList().add(fq);
                 
-                // FOr testing.. delete the break statement below after testing
-                break;
             } catch (Exception e) {
                 SystemLog.logException(e.getMessage());
                 SystemLog.logMessage("Adding failed batch to list and to the Database with status as FAILED to be executed later");
@@ -197,15 +213,14 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
         String criteria = baseCriteria;
 
         // This will set the is_archived column to 1 in master DB in rows which are to be transferred.
-        markArchivalColumnsInMaster(rt, criteria, batchSize);
+        markArchivalColumnsInMaster(rt, criteria, batchSize,Boolean.TRUE);
 
         start = start + batchSize;
 
         batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");
         SystemLog.logMessage("============================================================================");
 
-        tt.trackTimeInMinutes("********************************************************\n Total time elapsed since process was started is : ");
-        SystemLog.logMessage("*********************************************************");
+       
         return start;
 
     }
@@ -278,21 +293,21 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
         }
     }
 
-    private void markArchivalColumnsInMaster(RelationTable rt, String criteria, Long limitSize) {
+    private void markArchivalColumnsInMaster(RelationTable rt, String criteria, Long limitSize,Boolean mark) {
         // Set<Object> result = masterDbDao.getPrimaryKeyResultsToBeArchived(rt, criteria, limitSize);
         // executionStats.get().getTableToPrimaryKeySetMap().put(rt.getTableName(), result);
-        masterDbDao.markResultsToBeArchived(rt, criteria, limitSize);
-        updateArchivalColumn(rt);
+        masterDbDao.markResultsToBeArchived(rt, criteria, limitSize,mark);
+        updateArchivalColumn(rt,mark);
     }
 
-    private void updateArchivalColumn(RelationTable rt) {
+    private void updateArchivalColumn(RelationTable rt,Boolean mark) {
 
         if (rt.getForeignRelations() != null && !rt.getForeignRelations().isEmpty()) {
             for (RelationTable foreignRelation : rt.getForeignRelations()) {
                 //    Set<Object> result = masterDbDao.getRelatedPrimaryKeyResultToArchive(foreignRelation);
                 //  executionStats.get().getTableToPrimaryKeySetMap().put(foreignRelation.getTableName(), result);
-                masterDbDao.markRelatedResultToArchive(foreignRelation/*, executionStats.get().getTableToPrimaryKeySetMap().get(foreignRelation.getRelatedToTableName())*/);
-                updateArchivalColumn(foreignRelation);
+                masterDbDao.markRelatedResultToArchive(foreignRelation,mark);
+                updateArchivalColumn(foreignRelation,mark);
             }
         }
 
@@ -301,8 +316,8 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
             RelationTable nextRelation = iterator.next();
             //   Set<Object> result = masterDbDao.getRelatedPrimaryKeyResultToArchive(nextRelation);
             //   executionStats.get().getTableToPrimaryKeySetMap().put(nextRelation.getTableName(), result);
-            masterDbDao.markRelatedResultToArchive(nextRelation/*, executionStats.get().getTableToPrimaryKeySetMap().get(nextRelation.getRelatedToTableName())*/);
-            updateArchivalColumn(nextRelation);
+            masterDbDao.markRelatedResultToArchive(nextRelation,mark);
+            updateArchivalColumn(nextRelation,mark);
         }
     }
 
