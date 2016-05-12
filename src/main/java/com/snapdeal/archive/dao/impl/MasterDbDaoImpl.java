@@ -205,10 +205,10 @@ public class MasterDbDaoImpl implements MasterDbDao {
             if(QueryType.IN.equals(rt.getQueryType())){
                 query = "update "+rt.getTableName()+" set is_archived=? "+auditFieldClause+" where "+ rt.getRelationColumn() +" in "
                         + "(select distinct "+rt.getRelatedToColumnName()+" from "+rt.getRelatedToTableName()+" where is_archived=1)"
-                        + "and is_archived =0 or is_archived is null";
+                        + "and is_archived =0";
             }else{
                 query = "update "+rt.getTableName()+" t1 inner join "+rt.getRelatedToTableName()+" t2 set t1.is_archived=? "+auditFieldClause+" where t1."+rt.getRelationColumn()+"=t2."+rt.getRelatedToColumnName()+" and "
-                        + "t2.is_archived=1 and (t1.is_archived =0 or t1.is_archived is null) ";
+                        + "t2.is_archived=1 and t1.is_archived =0";
             }
             objArr[0]=1;
         }else{
