@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.simple.SimpleJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,9 @@ public class MasterDbDaoImpl implements MasterDbDao {
     
     @Autowired
     private SimpleJdbcTemplate archivalJdbcTemplate;
+    
+    @Value("${archived.column.name}")
+    private String archivedColumnName;
 
     @Override
     @Transactional("masterTransactionManager")
@@ -172,10 +176,10 @@ public class MasterDbDaoImpl implements MasterDbDao {
       List<Object[]> batchArgs = new ArrayList<>();
       Object[] objArr = new Object[1];
       if(mark){
-          query = "update "+rt.getTableName()+" set is_archived=? "+criteria+" and (is_archived is null or is_archived =0) limit "+limitSize;
+          query = "update "+rt.getTableName()+" set "+archivedColumnName+"=? "+criteria+" and "+archivedColumnName+"=0 limit "+limitSize;
           objArr[0]=1;
       }else{
-          query = "update "+rt.getTableName()+" set is_archived=? where is_archived =1";
+          query = "update "+rt.getTableName()+" set "+archivedColumnName+"=? where "+archivedColumnName+" =1";
           objArr[0]=0;
       }
       batchArgs.add(objArr);
@@ -203,16 +207,16 @@ public class MasterDbDaoImpl implements MasterDbDao {
         Object[] objArr = new Object[1];
         if(mark){
             if(QueryType.IN.equals(rt.getQueryType())){
-                query = "update "+rt.getTableName()+" set is_archived=? "+auditFieldClause+" where "+ rt.getRelationColumn() +" in "
-                        + "(select distinct "+rt.getRelatedToColumnName()+" from "+rt.getRelatedToTableName()+" where is_archived=1)"
-                        + "and is_archived =0";
+                query = "update "+rt.getTableName()+" set "+archivedColumnName+"=? "+auditFieldClause+" where "+ rt.getRelationColumn() +" in "
+                        + "(select distinct "+rt.getRelatedToColumnName()+" from "+rt.getRelatedToTableName()+" where "+archivedColumnName+"=1)"
+                        + "and "+archivedColumnName+" =0";
             }else{
-                query = "update "+rt.getTableName()+" t1 inner join "+rt.getRelatedToTableName()+" t2 set t1.is_archived=? "+auditFieldClause+" where t1."+rt.getRelationColumn()+"=t2."+rt.getRelatedToColumnName()+" and "
-                        + "t2.is_archived=1 and t1.is_archived =0";
+                query = "update "+rt.getTableName()+" t1 inner join "+rt.getRelatedToTableName()+" t2 set t1."+archivedColumnName+"=? "+auditFieldClause+" where t1."+rt.getRelationColumn()+"=t2."+rt.getRelatedToColumnName()+" and "
+                        + "t2."+archivedColumnName+"=1 and t1."+archivedColumnName+" =0";
             }
             objArr[0]=1;
         }else{
-            query = "update "+rt.getTableName()+" set is_archived=? where is_archived =1";
+            query = "update "+rt.getTableName()+" set "+archivedColumnName+"=? where "+archivedColumnName+" =1";
             objArr[0]=0;
         }
         SystemLog.logMessage("Query to be executed is : "+ query);
@@ -222,22 +226,6 @@ public class MasterDbDaoImpl implements MasterDbDao {
         tt.trackTimeInSeconds("Time taken to update table : "+ rt.getTableName() +" is : ");
         
     }
-
-   /* private String getParentRelationPrimaryKeyNotInQuery(RelationTable parentRelation, Set<Object> primaryKeyNotInSet, String tableName) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(tableName).append(".").append(parentRelation.getPrimaryColumn()).append(" not in (");
-        
-        StringBuilder notInQuery = new StringBuilder();
-        for(Object obj : primaryKeyNotInSet){
-            notInQuery.append("'"+obj.toString()+"',");
-        }
-        String notInQr = notInQuery.toString();
-        notInQr = notInQr.substring(0, notInQr.length()-1);
-        
-        builder.append(notInQr).append(")");
-        return builder.toString();
-        
-    }*/
 
     private String getAuditFieldClause(RelationTable rt) {
         
@@ -275,37 +263,4 @@ public class MasterDbDaoImpl implements MasterDbDao {
         SystemLog.logMessage("Result lenght is "+ result.length);
         tt.trackTimeInSeconds("Time taken to delete records from  table : "+ rt.getTableName() +" is : ");
     }
-    
-    /*@Override
-    @Transactional("masterTransactionManager") // change this to masterTransactionalManager once the it is fully tested and ready for production
-    public  Set<Object> getPrimaryKeyResultsToBeArchived(RelationTable rt,String criteria,Long limitSize) {
-      TimeTracker tt= new TimeTracker();
-      tt.startTracking();
-      String query = "select "+rt.getPrimaryColumn()+" from "+rt.getTableName()+" "+criteria+" and (is_archived is null or is_archived =0) limit "+limitSize;
-      SystemLog.logMessage("Query to be executed is : "+ query);
-      Map<String,Object> args = new HashMap<>();
-      List<Map<String, Object>> result =  simpleJdbcTemplate.queryForList(query, args);
-      tt.trackTimeInSeconds("Time taken to update table : "+ rt.getTableName() +" is : ");
-      Set<Object> primaryKeySet = ArchivalUtil.getPropertySetForListOfMap(result, rt.getPrimaryColumn());
-      return primaryKeySet;
-        
-    }
-    
-    @Override
-    @Transactional("masterTransactionManager") // change this to masterTransactionalManager once the it is fully tested and ready for production
-    public  Set<Object> getRelatedPrimaryKeyResultToArchive(RelationTable rt) {
-        
-        TimeTracker tt= new TimeTracker();
-        tt.startTracking();
-        
-        String query = "select t1."+rt.getPrimaryColumn()+" from "+rt.getTableName()+" t1 inner join "+rt.getRelatedToTableName()+" t2  where t1."+rt.getRelationColumn()+"=t2."+rt.getRelatedToColumnName()+" and "
-                + "t2.is_archived=1 and (t1.is_archived =0 or t1.is_archived is null) ";
-        SystemLog.logMessage("Query to be executed is : "+ query);
-        Map<String,Object> args = new HashMap<>();
-        List<Map<String, Object>> result =  simpleJdbcTemplate.queryForList(query, args);
-        tt.trackTimeInSeconds("Time taken to update table : "+ rt.getTableName() +" is : ");
-        Set<Object> primaryKeySet = ArchivalUtil.getPropertySetForListOfMap(result, rt.getPrimaryColumn());
-        return primaryKeySet;
-        
-    }*/
 }
