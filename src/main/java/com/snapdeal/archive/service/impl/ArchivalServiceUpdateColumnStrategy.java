@@ -7,9 +7,9 @@ package com.snapdeal.archive.service.impl;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.snapdeal.archive.dao.ArchivalDbDao;
@@ -41,8 +41,11 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
     @Autowired
     private ArchivalDbDao               archivalDbDao;
 
-    private static final String         CRITERIA       = " where is_archived=1";
-    private static final String         DELETE_CRITERIA = "where is_archived=?";
+    @Value("${archived.criteria}")
+    private String         CRITERIA;
+    
+    @Value("${archived.delete.criteria}")
+    private String         DELETE_CRITERIA;
 
     private ThreadLocal<ExecutionStats> executionStats = new ThreadLocal<ExecutionStats>() {
                                                            protected ExecutionStats initialValue() {
@@ -75,7 +78,7 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
         Long totalObjects = getCountFromMaster(tableName, baseCriteria);
         long start = 0;
         SystemLog.logMessage("Total " + tableName + " Objects to archive is  : " + totalObjects);
-
+        int totalRows =0;
         while (start < totalObjects) {
             try {
                 SystemLog.logMessage("---------Starting the Batch for START = " + start +" of total objects  = "+ totalObjects+"--------");
@@ -110,6 +113,10 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
                 ExecutionQuery fq = ArchivalUtil.getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.SUCCESSFUL, null, QueryType.INSERT);
                 executionStats.get().getSuccessfulCompletedQueryList().add(fq);
                 
+                int numberOfRowInThisBatch = getTotalRowsArchived();
+                totalRows+=numberOfRowInThisBatch;
+                SystemLog.logMessage("----------------- Total row archived in this batch = "+numberOfRowInThisBatch);
+                
                 tt.trackTimeInMinutes("********************************************************\n Total time elapsed since process was started is : ");
                 SystemLog.logMessage("*********************************************************");
                 
@@ -120,8 +127,7 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
 
                 // If it was already in this list.. dont save it to DB
                 if (!executionStats.get().getFailedQueryList().contains(fq)) {
-                    //TODO : commenting this for testing only
-                //    relationDao.saveExecutionQuery(fq);
+                    relationDao.saveExecutionQuery(fq);
                 }
                 // add to failed list
                 executionStats.get().getFailedQueryList().add(fq);
@@ -134,14 +140,24 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
 
         //  SystemLog.logMessage("Trying failed tasks..total failed batch size is : " + executionStats.get().getFailedQueryList().size());
         // tryFailedTasks(tt);
+        
+        SystemLog.logMessage("---------Total Number of rows archived = " + totalRows);
 
         tt.trackTimeInMinutes("********************************************************************\n Total time taken to archive data (total rows = "
-                + executionStats.get().getTotalArchivedCount() + ") is : ");
+                + totalRows + ") is : ");
         SystemLog.logMessage("**************************************************************************************");
 
         SystemLog.logMessage("Permanantly failed query list is  : " + executionStats.get().getPermanantFailedQueryList());
     
 
+    }
+
+    private int getTotalRowsArchived() {
+       int total =0;
+       for(List<Map<String, Object>> value : executionStats.get().getTableResultMap().values()){
+           total+=value.size();
+       }
+        return total;
     }
 
     private void resetForeignRelations(RelationTable rt, Long batchSize) {
@@ -216,11 +232,6 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
         markArchivalColumnsInMaster(rt, criteria, batchSize,Boolean.TRUE);
 
         start = start + batchSize;
-
-        batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");
-        SystemLog.logMessage("============================================================================");
-
-       
         return start;
 
     }

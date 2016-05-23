@@ -15,6 +15,7 @@
 	<aop:aspectj-autoproxy/>
 
 	<context:annotation-config></context:annotation-config>
+	<context:property-placeholder location="classpath:/properties/application.properties"/>
 
 	<bean id="repDataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
 		<property name="jndiName" value="java:comp/env/jdbc/DatabaseArchival" />
@@ -39,7 +40,6 @@
 		<property name="dataSource">
 			<ref bean="masterDataSource" />
 		</property>
-		<qualifier value="replica" />
 		<property name="hibernateProperties">
 			<props>
 				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
@@ -58,7 +58,6 @@
 		<property name="dataSource">
 			<ref bean="archivalDataSource" />
 		</property>
-		<qualifier value="replica" />
 		<property name="hibernateProperties">
 			<props>
 				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
@@ -77,11 +76,10 @@
 		<property name="dataSource">
 			<ref bean="repDataSource" />
 		</property>
-		<qualifier value="replica" />
 		<property name="hibernateProperties">
 			<props>
 				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
-				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.show_sql">true</prop>
 			</props>
 		</property>
 		<property name="packagesToScan">

@@ -8,6 +8,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.snapdeal.archive.util.SystemLog;
@@ -20,7 +21,8 @@ import com.snapdeal.archive.util.SystemLog;
 @Component
 public class ArchivingExceptionHandlingAspect {
     
-    private final int maxRetryCount = 3; 
+    @Value("${max.retry.count}")
+    private Integer maxRetryCount; 
     
     @Pointcut("execution(* com.snapdeal.archive.dao.impl.MasterDbDaoImpl.mark*(..))")
     public void markArchive() {
@@ -55,9 +57,10 @@ public class ArchivingExceptionHandlingAspect {
                 break;
             } catch (Throwable e) {
                 i++;
-                SystemLog.logMessage("Some exception occurred ivoking method " + pjp.getSignature().getName() + ". Trying for " + i + 1 + " time");
+                int tryCount = i+1;
+                SystemLog.logMessage("Some exception occurred ivoking method " + pjp.getSignature().getName() + ". Trying for " +tryCount + " time");
                 if (i == maxRetryCount-1) {
-                    SystemLog.logException("Cannot complete the method " + pjp.getSignature().getName() + " evene after trying 3 times...");
+                    SystemLog.logException("Cannot complete the method " + pjp.getSignature().getName() + " evene after trying "+maxRetryCount+" times...");
                     throw e;
                 }
 
