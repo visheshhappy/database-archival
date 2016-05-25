@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.snapdeal.archive.dao.ArchivalDbDao;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
+import com.snapdeal.archive.factory.DataBaseFactory;
 import com.snapdeal.archive.util.SystemLog;
 import com.snapdeal.archive.util.TimeTracker;
 
@@ -32,14 +33,17 @@ import com.snapdeal.archive.util.TimeTracker;
 @Transactional("archivalTransactionManager")
 public class ArchivalDbDaoImpl implements ArchivalDbDao {
 
-    @Autowired
+   @Autowired
     private SimpleJdbcTemplate archivalJdbcTemplate;
 
     @Autowired
-    private SessionFactory     archivalDBSessionFactory;
+   private SessionFactory     archivalDBSessionFactory;
     
     @Autowired
     private SimpleJdbcTemplate simpleJdbcTemplate;
+    
+    @Autowired
+    private DataBaseFactory databaseFactory;
 
     @Override
     @Transactional("archivalTransactionManager")
@@ -80,7 +84,7 @@ public class ArchivalDbDaoImpl implements ArchivalDbDao {
         try {
             TimeTracker tt = new TimeTracker();
             tt.startTracking();
-            int[] batchUpdateResult = archivalJdbcTemplate.batchUpdate(query, batchArgs);
+            int[] batchUpdateResult = getArchivalSimpleJdbcTemplate().batchUpdate(query, batchArgs);
             tt.trackTimeInSeconds("^^^^^^^^^^Total time taken to execute update query is  :");
             SystemLog.logMessage("Result is : " + batchUpdateResult.length);
             return batchUpdateResult.length;
@@ -96,7 +100,7 @@ public class ArchivalDbDaoImpl implements ArchivalDbDao {
     @Transactional("archivalTransactionManager")
     public List getArchivalResult(RelationTable rt) throws BusinessException {
         try {
-            Query query = archivalDBSessionFactory.getCurrentSession().createSQLQuery("select * from " + rt.getTableName()); // TODO : add where clause for date range
+            Query query =  getArchivalDBSessionFactory().getCurrentSession().createSQLQuery("select * from " + rt.getTableName()); // TODO : add where clause for date range
             return query.list();
         } catch (Exception e) {
             throw new BusinessException(e);
@@ -113,7 +117,7 @@ public class ArchivalDbDaoImpl implements ArchivalDbDao {
         tt.startTracking();
         Object[] params = null;
         try {
-            List<Map<String, Object>> count = archivalJdbcTemplate.queryForList(query, params);
+            List<Map<String, Object>> count = getArchivalSimpleJdbcTemplate().queryForList(query, params);
             tt.trackTimeInSeconds("@@@@@@@Total time taken to execute query is  : ");
             for (Entry<String, Object> entry : count.get(0).entrySet()) {
                 return (Long) entry.getValue();
@@ -136,7 +140,7 @@ public class ArchivalDbDaoImpl implements ArchivalDbDao {
             TimeTracker tt = new TimeTracker();
             tt.startTracking();
 
-            List<Map<String, Object>> result = archivalJdbcTemplate.queryForList(query, queryParams);
+            List<Map<String, Object>> result = getArchivalSimpleJdbcTemplate().queryForList(query, queryParams);
             tt.trackTimeInSeconds("#######Total time taken to execute 'in' query is : ");
             for (Entry<String, Object> entry : result.get(0).entrySet()) {
                 return (Long) entry.getValue();
@@ -161,7 +165,7 @@ public class ArchivalDbDaoImpl implements ArchivalDbDao {
             TimeTracker tt = new TimeTracker();
             tt.startTracking();
 
-            List<Map<String, Object>> result = archivalJdbcTemplate.queryForList(query, queryParams);
+            List<Map<String, Object>> result = getArchivalSimpleJdbcTemplate().queryForList(query, queryParams);
             tt.trackTimeInSeconds("#######Total time taken to execute 'in' query is : ");
             for (Entry<String, Object> entry : result.get(0).entrySet()) {
                 return (Long) entry.getValue();
@@ -181,13 +185,29 @@ public class ArchivalDbDaoImpl implements ArchivalDbDao {
             tt.startTracking();
             String query = "ALTER TABLE "+tableName+" ADD COLUMN "+columnName+" "+columnType;
             Map<String,?> map = new HashMap<>();
-            simpleJdbcTemplate.update(query, map);
+            getSimpleJdbcTemplate().update(query, map);
             tt.trackTimeInSeconds("-----------Time taken to alter table"+tableName+" is : ");
         }catch(Exception e){
             SystemLog.logException(e.getMessage());
         }
       
         
+    }
+    
+
+    private SimpleJdbcTemplate getSimpleJdbcTemplate(){
+      //  return databaseFactory.getSimplJdbcTemplate("OmsDs");
+        return simpleJdbcTemplate;
+    }
+    
+    private SimpleJdbcTemplate getArchivalSimpleJdbcTemplate(){
+     //   return databaseFactory.getSimplJdbcTemplate("OmsArchival");
+        return archivalJdbcTemplate;
+    }
+    
+    private SessionFactory getArchivalDBSessionFactory(){
+        //return databaseFactory.getSessionFactory("OmsArchival");
+        return archivalDBSessionFactory;
     }
 
 }

@@ -54,7 +54,7 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
                                                        };
 
     @Override
-    public void deleteMasterData(String tableName, String criteria, Long batchSize) throws BusinessException {
+    public void deleteMasterData(String tableName, String criteria, Long batchSize,String archiveInfoName) throws BusinessException {
         throw new UnsupportedOperationException();
 
     }
@@ -65,13 +65,13 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
     }
 
     @Override
-    public void archieveVerifyAndDeleteData(String tableName, String baseCriteria, Long batchSize) throws BusinessException {
+    public void archieveVerifyAndDeleteData(String tableName, String baseCriteria, Long batchSize,String archiveInfoName) throws BusinessException {
 
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
         RelationTable rt;
         try {
-            rt = relationDao.getRelationShipTableByTableName(tableName, 0);
+            rt = relationDao.getRelationTableByArchiveInfoNameAndTableName(archiveInfoName, tableName);
         } catch (BusinessException e1) {
             throw new BusinessException("Error occurred while fetching relation table for table name : " + tableName, e1);
         }
@@ -173,12 +173,12 @@ public class ArchivalServiceUpdateColumnStrategy extends AbstractArchivalService
     }
 
     @Override
-    public void archieveMasterData(String tableName, String baseCriteria, Long batchSize) throws BusinessException {
+    public void archieveMasterData(String tableName, String baseCriteria, Long batchSize,String archiveInfoName) throws BusinessException {
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
         RelationTable rt;
         try {
-            rt = relationDao.getRelationShipTableByTableName(tableName, 0);
+            rt = relationDao.getRelationTableByArchiveInfoNameAndTableName(archiveInfoName, tableName);
         } catch (BusinessException e1) {
             throw new BusinessException("Error occurred while fetching relation table for table name : " + tableName, e1);
         }

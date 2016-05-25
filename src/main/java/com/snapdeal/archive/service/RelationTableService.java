@@ -4,6 +4,9 @@
  */  
 package com.snapdeal.archive.service;
 
+import java.util.List;
+
+import com.snapdeal.archive.entity.ArchiveInformation;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
 
@@ -15,5 +18,9 @@ import com.snapdeal.archive.exception.BusinessException;
 public interface RelationTableService {
     
     RelationTable getRelationTableByTableName(String tableName) throws BusinessException ;
+
+    RelationTable getRelationTableByArchiveInfoNameAndTableName(String archiveInfoName, String tableName) throws BusinessException;
+
+    List<ArchiveInformation> getAllArchiveInformations() throws BusinessException;
 
 }

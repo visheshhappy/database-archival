@@ -7,14 +7,19 @@ package com.snapdeal.archive.dao.impl;
 import java.util.Date;
 import java.util.List;
 
+import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.Criterion;
+import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.snapdeal.archive.dao.RelationDao;
+import com.snapdeal.archive.entity.ArchiveInformation;
+import com.snapdeal.archive.entity.DatabaseEntry;
 import com.snapdeal.archive.entity.ExecutionQuery;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
@@ -74,6 +79,50 @@ public class RelationDaoImpl implements RelationDao {
         try {
             Query query = sessionFactory.getCurrentSession().createQuery("from RelationTable");
             List<RelationTable> results = query.list();
+            return results;
+        } catch (Exception e) {
+            throw new BusinessException(e);
+        }
+    }
+
+    @Override
+    public List<DatabaseEntry> getDatabaseEntries() throws BusinessException {
+        Query query = sessionFactory.getCurrentSession().createQuery("from DatabaseEntry where active=:isActive");
+        query.setParameter("isActive",true);
+        List<DatabaseEntry> results = query.list();
+        return results;
+    }
+
+    @Override
+    public List<RelationTable> getRelationsByArchiveInfoName(String archiveInfoName) throws BusinessException {
+        try {
+            Query query = sessionFactory.getCurrentSession().createQuery("from ArchiveInformation where name=:archiveName");
+            query.setParameter("archiveName",archiveInfoName);
+            List<RelationTable> results = query.list();
+            return results;
+        } catch (Exception e) {
+            throw new BusinessException(e);
+        }
+    }
+
+    @Override
+    public RelationTable getRelationTableByArchiveInfoNameAndTableName(String archiveInfoName, String tableName) throws BusinessException {
+        try {
+           Criteria criteria = sessionFactory.getCurrentSession().createCriteria(RelationTable.class);
+           criteria.add(Restrictions.eq("tableName", tableName));
+           criteria.createAlias("archiveInformation", "archiveInfo");
+           criteria.add(Restrictions.eq("archiveInfo.name", archiveInfoName));
+           return (RelationTable) criteria.uniqueResult();
+        } catch (Exception e) {
+            throw new BusinessException(e);
+        }
+    }
+
+    @Override
+    public List<ArchiveInformation> getAllArchiveInformations() throws BusinessException {
+        try {
+            Query query = sessionFactory.getCurrentSession().createQuery("from ArchiveInformation");
+            List<ArchiveInformation> results = query.list();
             return results;
         } catch (Exception e) {
             throw new BusinessException(e);

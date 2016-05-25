@@ -6,11 +6,16 @@ package com.snapdeal.archive.entity;
 
 import java.io.Serializable;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 /**
@@ -45,6 +50,54 @@ public class DatabaseEntry implements Serializable {
 
     @Column(name = "password")
     private String            password;
+
+    public enum DatabaseType {
+        MYSQL, ORACLE
+    }
+
+    @Column(name = "database_type")
+    @Enumerated(value = EnumType.STRING)
+    private DatabaseType       databaseType;
+
+    @Column(name = "driver_class")
+    private String             driverClass;
+
+    @Column(name = "is_active")
+    private Boolean            active;
+
+    @Column(name = "database_name")
+    private String             databaseName;
+
+    @Column(name = "extra_parameter")
+    private String             extraParameter;
+
+    @ManyToOne(cascade = { CascadeType.ALL })
+    @JoinColumn(name = "archive_information_id")
+    private ArchiveInformation archiveInformation;
+
+    public ArchiveInformation getArchiveInformation() {
+        return archiveInformation;
+    }
+
+    public void setArchiveInformation(ArchiveInformation archiveInformation) {
+        this.archiveInformation = archiveInformation;
+    }
+
+    public String getExtraParameter() {
+        return extraParameter;
+    }
+
+    public void setExtraParameter(String extraParameter) {
+        this.extraParameter = extraParameter;
+    }
+
+    public String getDatabaseName() {
+        return databaseName;
+    }
+
+    public void setDatabaseName(String databaseName) {
+        this.databaseName = databaseName;
+    }
 
     public Long getId() {
         return id;
@@ -94,9 +147,34 @@ public class DatabaseEntry implements Serializable {
         this.password = password;
     }
 
+    public DatabaseType getDatabaseType() {
+        return databaseType;
+    }
+
+    public void setDatabaseType(DatabaseType databaseType) {
+        this.databaseType = databaseType;
+    }
+
+    public String getDriverClass() {
+        return driverClass;
+    }
+
+    public void setDriverClass(String driverClass) {
+        this.driverClass = driverClass;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
+
     @Override
     public String toString() {
-        return "DatabaseEntry [id=" + id + ", name=" + name + ", ip=" + ip + ", port=" + port + ", username=" + username + ", password=" + password + "]";
+        return "DatabaseEntry [id=" + id + ", name=" + name + ", ip=" + ip + ", port=" + port + ", username=" + username + ", password=" + password + ", databaseType="
+                + databaseType + ", driverClass=" + driverClass + ", active=" + active + ", databaseName=" + databaseName + ", extraParameter=" + extraParameter + "]";
     }
 
 }

@@ -21,6 +21,7 @@ import com.snapdeal.archive.dao.MasterDbDao;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.entity.RelationTable.QueryType;
 import com.snapdeal.archive.exception.BusinessException;
+import com.snapdeal.archive.factory.DataBaseFactory;
 import com.snapdeal.archive.util.SystemLog;
 import com.snapdeal.archive.util.TimeTracker;
 
@@ -37,6 +38,9 @@ public class MasterDbDaoImpl implements MasterDbDao {
     @Autowired
     private SimpleJdbcTemplate archivalJdbcTemplate;
     
+    @Autowired
+    private DataBaseFactory databaseFactory;
+    
     @Value("${archived.column.name}")
     private String archivedColumnName;
 
@@ -49,7 +53,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
         tt.startTracking();
         Object[] params = null;
         try {
-            List<Map<String, Object>> result = simpleJdbcTemplate.queryForList(query, params);
+            List<Map<String, Object>> result = getSimpleJdbcTemplate().queryForList(query, params);
             tt.trackTimeInSeconds("@@@@@@@Total time taken to execute query is  : ");
             return result;
         } catch (Exception e) {
@@ -70,7 +74,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
             tt.startTracking();
             SystemLog.logMessage("Getting in query result from db for table : temp_" + rt.getTableName() + " and in query set size is : " + inQuerySet.size());
 
-            List<Map<String, Object>> result = simpleJdbcTemplate.queryForList(query, queryParams);
+            List<Map<String, Object>> result = getSimpleJdbcTemplate().queryForList(query, queryParams);
             tt.trackTimeInSeconds("#######Total time taken to execute 'in' query is : ");
             return result;
         } catch (Exception e) {
@@ -113,7 +117,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
         try {
-            int updateResult = archivalJdbcTemplate.update(query, idsList.toArray());
+            int updateResult = getArchivalSimpleJdbcTemplate().update(query, idsList.toArray());
             SystemLog.logMessage("result after deleting is : " + updateResult);
             tt.trackTimeInMinutes("Time taken for deleting " + rt.getTableName() + " records is : ");
         } catch (Exception e) {
@@ -132,7 +136,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
         tt.startTracking();
         Object[] params = null;
         try {
-            List<Map<String, Object>> count = simpleJdbcTemplate.queryForList(query, params);
+            List<Map<String, Object>> count = getSimpleJdbcTemplate().queryForList(query, params);
             tt.trackTimeInSeconds("@@@@@@@Total time taken to execute query is  : ");
             for (Entry<String, Object> entry : count.get(0).entrySet()) {
                 return (Long) entry.getValue();
@@ -156,7 +160,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
             tt.startTracking();
             SystemLog.logMessage("Getting in query result from db for table : temp_" + rt.getTableName() + " and in query set size is : " + inQuerySet.size());
 
-            List<Map<String, Object>> result = simpleJdbcTemplate.queryForList(query, queryParams);
+            List<Map<String, Object>> result = getSimpleJdbcTemplate().queryForList(query, queryParams);
             tt.trackTimeInSeconds("#######Total time taken to execute 'in' query is : ");
             for (Entry<String, Object> entry : result.get(0).entrySet()) {
                 return (Long) entry.getValue();
@@ -185,7 +189,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
       batchArgs.add(objArr);
       
       SystemLog.logMessage("Query to be executed is : "+ query);
-      int[] result =  simpleJdbcTemplate.batchUpdate(query, batchArgs);
+      int[] result =  getSimpleJdbcTemplate().batchUpdate(query, batchArgs);
    
       SystemLog.logMessage("result size = " + result.length);
       tt.trackTimeInSeconds("Time taken to update table : "+ rt.getTableName() +" is : ");
@@ -221,7 +225,7 @@ public class MasterDbDaoImpl implements MasterDbDao {
         }
         SystemLog.logMessage("Query to be executed is : "+ query);
         batchArgs.add(objArr);
-        int[] result =  simpleJdbcTemplate.batchUpdate(query, batchArgs);
+        int[] result =  getSimpleJdbcTemplate().batchUpdate(query, batchArgs);
         SystemLog.logMessage("result size = " + result.length);
         tt.trackTimeInSeconds("Time taken to update table : "+ rt.getTableName() +" is : ");
         
@@ -259,8 +263,18 @@ public class MasterDbDaoImpl implements MasterDbDao {
         batchArgs.add(objArr);
         /*String query = "update "+rt.getTableName()+" set is_archived=? "+criteria; */
         SystemLog.logMessage("Executing query : " + query);
-        int [] result = simpleJdbcTemplate.batchUpdate(query, batchArgs);
+        int [] result = getSimpleJdbcTemplate().batchUpdate(query, batchArgs);
         SystemLog.logMessage("Result lenght is "+ result.length);
         tt.trackTimeInSeconds("Time taken to delete records from  table : "+ rt.getTableName() +" is : ");
+    }
+    
+    private SimpleJdbcTemplate getSimpleJdbcTemplate(){
+        //return databaseFactory.getSimplJdbcTemplate("OmsDs");
+        return  simpleJdbcTemplate;
+    }
+    
+    private SimpleJdbcTemplate getArchivalSimpleJdbcTemplate(){
+    //    return databaseFactory.getSimplJdbcTemplate("OmsArchival");
+        return archivalJdbcTemplate;
     }
 }

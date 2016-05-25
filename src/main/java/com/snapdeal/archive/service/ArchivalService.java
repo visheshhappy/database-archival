@@ -12,11 +12,11 @@ import com.snapdeal.archive.exception.BusinessException;
  */
 public interface ArchivalService {
 
-    void deleteMasterData(String tableName, String criteria,Long batchSize) throws BusinessException ;
+    void deleteMasterData(String tableName, String criteria,Long batchSize, String archiveInfoName) throws BusinessException ;
 
     boolean verifyArchivedData(String tableName, String criteria,Long batchSize) throws BusinessException ;
 
-    void archieveVerifyAndDeleteData(String tableName, String criteria,Long batchSize) throws BusinessException ;
+    void archieveVerifyAndDeleteData(String tableName, String criteria,Long batchSize, String archiveInfoName) throws BusinessException ;
 
     Long getCountFromMaster(String tableName, String criteria) throws BusinessException ;
 
@@ -24,6 +24,6 @@ public interface ArchivalService {
 
     Long getArchivalCount(String tableName, String baseCriteria) throws BusinessException ;
 
-    void archieveMasterData(String tableName, String baseCriteria, Long batchSize) throws BusinessException;
+    void archieveMasterData(String tableName, String baseCriteria, Long batchSize, String archiveInfoName) throws BusinessException;
 
 }

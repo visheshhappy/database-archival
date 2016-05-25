@@ -54,8 +54,8 @@ public class RelationTable implements Serializable {
     @Column(name = "related_column_name")
     private String             relatedToColumnName;
 
-    @Column(name = "level")
-    private Integer            level;
+   /* @Column(name = "level")
+    private Integer            level;*/
 
     @Column(name = "relation_column")
     private String             relationColumn;
@@ -89,6 +89,10 @@ public class RelationTable implements Serializable {
     @Column(name = "query_type")
     @Enumerated(EnumType.STRING)
     private QueryType          queryType;
+
+    @ManyToOne(cascade = { CascadeType.ALL })
+    @JoinColumn(name = "archive_information_id")
+    private ArchiveInformation archiveInformation;
 
     public QueryType getQueryType() {
         return queryType;
@@ -141,14 +145,14 @@ public class RelationTable implements Serializable {
     public void setRelatedToColumnName(String relatedToColumnName) {
         this.relatedToColumnName = relatedToColumnName;
     }
-
+/*
     public Integer getLevel() {
         return level;
     }
 
     public void setLevel(Integer level) {
         this.level = level;
-    }
+    }*/
 
     public String getRelatedToColumnType() {
         return relatedToColumnType;
@@ -222,10 +226,18 @@ public class RelationTable implements Serializable {
         this.isDeletionAllowed = isDeletionAllowed;
     }
 
+    public ArchiveInformation getArchiveInformation() {
+        return archiveInformation;
+    }
+
+    public void setArchiveInformation(ArchiveInformation archiveInformation) {
+        this.archiveInformation = archiveInformation;
+    }
+
     @Override
     public String toString() {
         return "RelationTable [id=" + id + ", tableName=" + tableName + ", relatedToTableName=" + relatedToTableName + ", relatedToColumnName=" + relatedToColumnName + ", level="
-                + level + ", relationColumn=" + relationColumn + ", relatedToColumnType=" + relatedToColumnType + ", parentRelation=" + parentRelation + ", relations=" + relations
+                + ", relationColumn=" + relationColumn + ", relatedToColumnType=" + relatedToColumnType + ", parentRelation=" + parentRelation + ", relations=" + relations
                 + "]";
     }
 

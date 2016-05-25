@@ -4,10 +4,13 @@
  */
 package com.snapdeal.archive.service.impl;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.snapdeal.archive.dao.RelationDao;
+import com.snapdeal.archive.entity.ArchiveInformation;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
 import com.snapdeal.archive.service.RelationTableService;
@@ -26,6 +29,18 @@ public class RelationTableServiceImpl implements RelationTableService {
     public RelationTable getRelationTableByTableName(String tableName) throws BusinessException {
         RelationTable rt = relationDao.getRelationShipTableByTableName(tableName, 0);
         return rt;
+    }
+
+    @Override
+    public RelationTable getRelationTableByArchiveInfoNameAndTableName(String archiveInfoName, String tableName) throws BusinessException {
+        RelationTable rt = relationDao.getRelationTableByArchiveInfoNameAndTableName(archiveInfoName,tableName);
+        return rt;
+    }
+
+    @Override
+    public List<ArchiveInformation> getAllArchiveInformations() throws BusinessException{
+        List<ArchiveInformation> archiveInformations = relationDao.getAllArchiveInformations();
+        return archiveInformations;
     }
 
 }

@@ -31,13 +31,13 @@ public abstract class AbstractArchivalService implements ArchivalService {
     private ArchivalDbDao archivalDbDao;
 
     @Override
-    public abstract void deleteMasterData(String tableName, String criteria, Long batchSize) throws BusinessException;
+    public abstract void deleteMasterData(String tableName, String criteria, Long batchSize,String archiveInfoName) throws BusinessException;
 
     @Override
     public abstract boolean verifyArchivedData(String tableName, String criteria, Long batchSize) throws BusinessException;
 
     @Override
-    public abstract void archieveVerifyAndDeleteData(String tableName, String criteria, Long batchSize) throws BusinessException;
+    public abstract void archieveVerifyAndDeleteData(String tableName, String criteria, Long batchSize,String archiveInfoName) throws BusinessException;
 
     @Override
     public Long getCountFromMaster(String tableName, String criteria) throws BusinessException {
@@ -52,7 +52,7 @@ public abstract class AbstractArchivalService implements ArchivalService {
     }
 
     @Override
-    public abstract void archieveMasterData(String tableName, String baseCriteria, Long batchSize) throws BusinessException;
+    public abstract void archieveMasterData(String tableName, String baseCriteria, Long batchSize,String archiveInfoName) throws BusinessException;
     
     // The method should have been protected, making it public so that aspect can be weaved around it.
     public Boolean verifyBasedOnCount(Map<RelationTable, List<Map<String, Object>>> tableResultMap) throws BusinessException {

@@ -34,13 +34,13 @@ public class ArchivalServiceDBPaginationStrategy extends ArchivalServiceImpl {
     private RelationDao relationDao;
 
     @Override
-    public void archieveMasterData(String tableName, String baseCriteria, Long batchSize) throws BusinessException {
+    public void archieveMasterData(String tableName, String baseCriteria, Long batchSize,String archiveInfoName) throws BusinessException {
 
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
         RelationTable rt;
         try {
-            rt = relationDao.getRelationShipTableByTableName(tableName, 0);
+            rt = relationDao.getRelationTableByArchiveInfoNameAndTableName(archiveInfoName, tableName);
         } catch (BusinessException e1) {
             throw new BusinessException("Error occurred while fetching relation table for table name : " + tableName, e1);
         }
@@ -50,7 +50,7 @@ public class ArchivalServiceDBPaginationStrategy extends ArchivalServiceImpl {
 
         while (start < totalObjects) {
             try {
-                start = batchArchivalProcess(baseCriteria, batchSize, tt, rt, start);
+                start = batchArchivalProcess(baseCriteria, batchSize, tt, rt, start,archiveInfoName);
                 ExecutionQuery fq = ArchivalUtil.getExecutionQueryPOJO(tableName, baseCriteria, start, batchSize, ExecutionQuery.Status.SUCCESSFUL, null, QueryType.INSERT);
                 executionStats.get().getSuccessfulCompletedQueryList().add(fq);
             } catch (Exception e) {
@@ -72,7 +72,7 @@ public class ArchivalServiceDBPaginationStrategy extends ArchivalServiceImpl {
         }
 
         SystemLog.logMessage("Trying failed tasks..total failed batch size is : " + executionStats.get().getFailedQueryList().size());
-        tryFailedTasks(tt);
+        tryFailedTasks(tt,archiveInfoName);
 
         tt.trackTimeInMinutes("********************************************************************\n Total time taken to archive data (total rows = "
                 + executionStats.get().getTotalArchivedCount() + ") is : ");
@@ -82,13 +82,13 @@ public class ArchivalServiceDBPaginationStrategy extends ArchivalServiceImpl {
 
     }
 
-    private long batchArchivalProcess(String baseCriteria, Long batchSize, TimeTracker tt, RelationTable rt, long start) throws BusinessException {
+    private long batchArchivalProcess(String baseCriteria, Long batchSize, TimeTracker tt, RelationTable rt, long start,String archiveInfoName) throws BusinessException {
         TimeTracker batchTracker = new TimeTracker();
         batchTracker.startTracking();
         String criteria = baseCriteria + " limit " + start + "," + batchSize;
         List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
         executionStats.get().getTableResultMap().put(rt, result);
-        pushData(rt, result, baseCriteria);
+        pushData(rt, result, baseCriteria,archiveInfoName);
         start = start + batchSize;
 
         batchTracker.trackTimeInMinutes("=====================================================================\n Time to archive data of batch size " + batchSize + " is : ");

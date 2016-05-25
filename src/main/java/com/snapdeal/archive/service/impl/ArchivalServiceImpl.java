@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import com.snapdeal.archive.dao.ArchivalDbDao;
 import com.snapdeal.archive.dao.MasterDbDao;
@@ -31,7 +30,6 @@ import com.snapdeal.archive.util.TimeTracker;
  * @version 1.0, 10-Mar-2016
  * @author vishesh
  */
-//@Service("archivalService")
 public abstract class ArchivalServiceImpl extends AbstractArchivalService {
 
     @Autowired
@@ -50,7 +48,7 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
     };
 
     @Override
-    public abstract void archieveMasterData(String tableName, String baseCriteria, Long batchSize) throws BusinessException; /*{
+    public abstract void archieveMasterData(String tableName, String baseCriteria, Long batchSize,String archiveInfoName) throws BusinessException; /*{
 
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
@@ -98,18 +96,18 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
 
     }
 */
-    protected void tryFailedTasks(TimeTracker tt) throws BusinessException {
+    protected void tryFailedTasks(TimeTracker tt, String archiveInfoName) throws BusinessException {
         Map<String, RelationTable> tableRelationMap = new HashMap<>();
         for (ExecutionQuery fq : executionStats.get().getFailedQueryList()) {
             RelationTable rt = null;
             if (tableRelationMap.get(fq.getTableName()) == null) {
-                rt = relationDao.getRelationShipTableByTableName(fq.getTableName(), 0);
+                rt = relationDao.getRelationTableByArchiveInfoNameAndTableName(archiveInfoName, fq.getTableName());
                 tableRelationMap.put(fq.getTableName(), rt);
             } else {
                 rt = tableRelationMap.get(fq.getTableName());
             }
             try {
-                batchArchivalProcess(fq.getCriteria(), fq.getBatchSize(), tt, rt, fq.getStart());
+                batchArchivalProcess(fq.getCriteria(), fq.getBatchSize(), tt, rt, fq.getStart(),archiveInfoName);
             } catch (Exception ex) {
                 SystemLog.logException(ex.getMessage());
                 SystemLog.logMessage("Adding permanantly failed batch to list with status as PERMANANT_FAILED This will not be executed again..Look for this manually");
@@ -131,13 +129,13 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
 
     }
 
-    private long batchArchivalProcess(String baseCriteria, Long batchSize, TimeTracker tt, RelationTable rt, long start) throws BusinessException {
+    private long batchArchivalProcess(String baseCriteria, Long batchSize, TimeTracker tt, RelationTable rt, long start, String archiveInfoName) throws BusinessException {
         TimeTracker batchTracker = new TimeTracker();
         batchTracker.startTracking();
         String criteria = baseCriteria + " limit " + start + "," + batchSize;
         List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
         executionStats.get().getTableResultMap().put(rt, result);
-        pushData(rt, result, baseCriteria);
+        pushData(rt, result, baseCriteria,archiveInfoName);
       //  verifyBasedOnCount();
         start = start + batchSize;
 
@@ -159,18 +157,18 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
         return start;
     }
 
-    private void archieveData(String tableName, String criteria) throws BusinessException {
-        RelationTable rt = relationDao.getRelationShipTableByTableName(tableName, 0);
+    private void archieveData(String tableName, String criteria, String archiveInfoName) throws BusinessException {
+        RelationTable rt = relationDao.getRelationTableByArchiveInfoNameAndTableName(archiveInfoName, tableName);
         List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
         executionStats.get().getTableResultMap().put(rt, result);
-        pushData(rt, result, criteria);
+        pushData(rt, result, criteria,archiveInfoName);
     }
 
     @Override
-    public void archieveVerifyAndDeleteData(String tableName, String baseCriteria, Long batchSize) throws BusinessException {
+    public void archieveVerifyAndDeleteData(String tableName, String baseCriteria, Long batchSize,String archiveInfoName) throws BusinessException {
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
-        RelationTable rt = relationDao.getRelationShipTableByTableName(tableName, 0);
+        RelationTable rt = relationDao.getRelationTableByArchiveInfoNameAndTableName(archiveInfoName, tableName);
         Long totalObjects = getCountFromMaster(tableName, baseCriteria);
         long start = 0;
         while (start < totalObjects) {
@@ -180,7 +178,7 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
                 String criteria = baseCriteria + " limit " + start + "," + batchSize;
                 List<Map<String, Object>> result = masterDbDao.getResult(rt, criteria);
                 executionStats.get().getTableResultMap().put(rt, result);
-                pushData(rt, result, baseCriteria);
+                pushData(rt, result, baseCriteria,archiveInfoName);
                 Boolean isVerified = verifyBasedOnCount(this.executionStats.get().getTableResultMap());
                 if (isVerified) {
                     deleteData(rt, result, criteria);
@@ -210,7 +208,7 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
         }
         
         SystemLog.logMessage("Trying failed tasks..total failed batch size is : " + executionStats.get().getFailedQueryList().size());
-        tryFailedTasks(tt);
+        tryFailedTasks(tt,archiveInfoName);
         
         tt.trackTimeInMinutes("********************************************************************\n Total time taken to archive data is : ");
         SystemLog.logMessage("**************************************************************************************");
@@ -218,10 +216,10 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
     }
 
     @Override
-    public void deleteMasterData(String tableName, String baseCriteria, Long batchSize) throws BusinessException {
+    public void deleteMasterData(String tableName, String baseCriteria, Long batchSize,String archiveInfoName) throws BusinessException {
         TimeTracker tt = new TimeTracker();
         tt.startTracking();
-        RelationTable rt = relationDao.getRelationShipTableByTableName(tableName, 0);
+        RelationTable rt = relationDao.getRelationTableByArchiveInfoNameAndTableName(archiveInfoName, tableName);
         Long totalObjects = getCountFromMaster(tableName, baseCriteria);
         long start = 0;
         while (start < totalObjects) {
@@ -252,19 +250,19 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
         }
         
         SystemLog.logMessage("Trying failed tasks..total failed batch size is : " + executionStats.get().getFailedQueryList().size());
-        tryDeleteFailedTasks(tt);
+        tryDeleteFailedTasks(tt,archiveInfoName);
         
         tt.trackTimeInMinutes("********************************************************************\n Total time taken to Delete data is : ");
         SystemLog.logMessage("**************************************************************************************");
     }
 
-    private void tryDeleteFailedTasks(TimeTracker tt) throws BusinessException {
+    private void tryDeleteFailedTasks(TimeTracker tt, String archiveInfoName) throws BusinessException {
 
         Map<String, RelationTable> tableRelationMap = new HashMap<>();
         for (ExecutionQuery fq : executionStats.get().getFailedQueryList()) {
             RelationTable rt = null;
             if (tableRelationMap.get(fq.getTableName()) == null) {
-                rt = relationDao.getRelationShipTableByTableName(fq.getTableName(), 0);
+                rt = relationDao.getRelationTableByArchiveInfoNameAndTableName(archiveInfoName, fq.getTableName());
                 tableRelationMap.put(fq.getTableName(), rt);
             } else {
                 rt = tableRelationMap.get(fq.getTableName());
@@ -366,10 +364,10 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
 
     }
 
-    protected void pushData(RelationTable rt, List<Map<String, Object>> result, String criteria) throws BusinessException {
+    protected void pushData(RelationTable rt, List<Map<String, Object>> result, String criteria, String archiveInfoName) throws BusinessException {
 
         SystemLog.logMessage("Calling pushData() method for : " + rt.getTableName());
-        insertIntoArchivalDb(rt, result, criteria, rt.getParentRelation());
+        insertIntoArchivalDb(rt, result, criteria, rt.getParentRelation(),archiveInfoName);
         Iterator<RelationTable> iterator = rt.getRelations().iterator();
         while (iterator.hasNext()) {
 
@@ -377,18 +375,18 @@ public abstract class ArchivalServiceImpl extends AbstractArchivalService {
             Set inQuerySet = getInQuerySet(result, nextRelation);
             List<Map<String, Object>> newResult = masterDbDao.getInQueryResult(nextRelation, inQuerySet);
             executionStats.get().getTableResultMap().put(nextRelation, newResult);
-            pushData(nextRelation, newResult, criteria);
+            pushData(nextRelation, newResult, criteria,archiveInfoName);
         }
     }
 
-    private void insertIntoArchivalDb(RelationTable rt, List<Map<String, Object>> result, String baseCriteria, RelationTable parentRelation) throws BusinessException {
+    private void insertIntoArchivalDb(RelationTable rt, List<Map<String, Object>> result, String baseCriteria, RelationTable parentRelation, String archiveInfoName) throws BusinessException {
 
         if (rt.getForeignRelations() != null && !rt.getForeignRelations().isEmpty()) {
             for (RelationTable foreignRelation : rt.getForeignRelations()) {
                 String criteria = getNestedCriteria(foreignRelation, rt, baseCriteria);
                 //  criteria = "where " + foreignRelation.getRelationColumn() + " in (select " + foreignRelation.getRelatedToColumnName() + " from "
                 //        + foreignRelation.getRelatedToTableName() + " " + baseCriteria + " )";
-                archieveData(foreignRelation.getTableName(), criteria);
+                archieveData(foreignRelation.getTableName(), criteria,archiveInfoName);
             }
         }
         Integer size = archivalDbDao.insertToArchivalDB(rt, result);
