@@ -23,6 +23,7 @@ import com.snapdeal.archive.entity.DatabaseEntry;
 import com.snapdeal.archive.entity.ExecutionQuery;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.exception.BusinessException;
+import com.snapdeal.archive.util.SystemLog;
 
 /**
  * @version 1.0, 29-Mar-2016
@@ -125,6 +126,7 @@ public class RelationDaoImpl implements RelationDao {
             List<ArchiveInformation> results = query.list();
             return results;
         } catch (Exception e) {
+            SystemLog.logException(e.getMessage());
             throw new BusinessException(e);
         }
     }

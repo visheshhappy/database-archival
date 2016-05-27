@@ -8,8 +8,10 @@ import java.util.List;
 
 import org.hibernate.SessionFactory;
 import org.springframework.jdbc.core.simple.SimpleJdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 
-import com.snapdeal.archive.entity.DatabaseEntry;
+import com.snapdeal.archive.DatabaseType;
+import com.snapdeal.archive.entity.ArchiveInformation;
 
 /**
  * @version 1.0, 23-May-2016
@@ -17,10 +19,12 @@ import com.snapdeal.archive.entity.DatabaseEntry;
  */
 public interface DataBaseFactory {
 
-    void loadAllDatabaseEntries(List<DatabaseEntry> entries);
+    void loadAllDatabaseEntries(List<ArchiveInformation> archiveInformations);
 
-    SessionFactory getSessionFactory(String name);
+    SessionFactory getSessionFactory(String name, DatabaseType databaseType);
 
-    SimpleJdbcTemplate getSimplJdbcTemplate(String name);
+    SimpleJdbcTemplate getSimplJdbcTemplate(String name, DatabaseType databaseType);
+
+    PlatformTransactionManager getTrasactionManager(String contextName, DatabaseType databaseType);
 
 }

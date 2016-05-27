@@ -18,6 +18,8 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import com.snapdeal.archive.DatabaseType;
+
 /**
  * @version 1.0, 16-Mar-2016
  * @author vishesh
@@ -51,13 +53,13 @@ public class DatabaseEntry implements Serializable {
     @Column(name = "password")
     private String            password;
 
-    public enum DatabaseType {
+    public enum DatabaseServer {
         MYSQL, ORACLE
     }
 
-    @Column(name = "database_type")
+    @Column(name = "database_server")
     @Enumerated(value = EnumType.STRING)
-    private DatabaseType       databaseType;
+    private DatabaseServer     databaseServer;
 
     @Column(name = "driver_class")
     private String             driverClass;
@@ -75,29 +77,9 @@ public class DatabaseEntry implements Serializable {
     @JoinColumn(name = "archive_information_id")
     private ArchiveInformation archiveInformation;
 
-    public ArchiveInformation getArchiveInformation() {
-        return archiveInformation;
-    }
-
-    public void setArchiveInformation(ArchiveInformation archiveInformation) {
-        this.archiveInformation = archiveInformation;
-    }
-
-    public String getExtraParameter() {
-        return extraParameter;
-    }
-
-    public void setExtraParameter(String extraParameter) {
-        this.extraParameter = extraParameter;
-    }
-
-    public String getDatabaseName() {
-        return databaseName;
-    }
-
-    public void setDatabaseName(String databaseName) {
-        this.databaseName = databaseName;
-    }
+    @Column(name = "database_type")
+    @Enumerated(value = EnumType.STRING)
+    private DatabaseType       databaseType;
 
     public Long getId() {
         return id;
@@ -147,12 +129,12 @@ public class DatabaseEntry implements Serializable {
         this.password = password;
     }
 
-    public DatabaseType getDatabaseType() {
-        return databaseType;
+    public DatabaseServer getDatabaseServer() {
+        return databaseServer;
     }
 
-    public void setDatabaseType(DatabaseType databaseType) {
-        this.databaseType = databaseType;
+    public void setDatabaseServer(DatabaseServer databaseServer) {
+        this.databaseServer = databaseServer;
     }
 
     public String getDriverClass() {
@@ -171,10 +153,42 @@ public class DatabaseEntry implements Serializable {
         this.active = active;
     }
 
+    public String getDatabaseName() {
+        return databaseName;
+    }
+
+    public void setDatabaseName(String databaseName) {
+        this.databaseName = databaseName;
+    }
+
+    public String getExtraParameter() {
+        return extraParameter;
+    }
+
+    public void setExtraParameter(String extraParameter) {
+        this.extraParameter = extraParameter;
+    }
+
+    public ArchiveInformation getArchiveInformation() {
+        return archiveInformation;
+    }
+
+    public void setArchiveInformation(ArchiveInformation archiveInformation) {
+        this.archiveInformation = archiveInformation;
+    }
+
+    public DatabaseType getDatabaseType() {
+        return databaseType;
+    }
+
+    public void setDatabaseType(DatabaseType databaseType) {
+        this.databaseType = databaseType;
+    }
+
     @Override
     public String toString() {
         return "DatabaseEntry [id=" + id + ", name=" + name + ", ip=" + ip + ", port=" + port + ", username=" + username + ", password=" + password + ", databaseType="
-                + databaseType + ", driverClass=" + driverClass + ", active=" + active + ", databaseName=" + databaseName + ", extraParameter=" + extraParameter + "]";
+                + databaseServer + ", driverClass=" + driverClass + ", active=" + active + ", databaseName=" + databaseName + ", extraParameter=" + extraParameter + "]";
     }
 
 }

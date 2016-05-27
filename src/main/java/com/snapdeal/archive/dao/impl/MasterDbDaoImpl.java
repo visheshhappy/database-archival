@@ -11,17 +11,22 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.hibernate.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.simple.SimpleJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.snapdeal.archive.DatabaseType;
+import com.snapdeal.archive.annotation.ArchiveTransactional;
 import com.snapdeal.archive.dao.MasterDbDao;
+import com.snapdeal.archive.dto.ArchivalContextDto;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.entity.RelationTable.QueryType;
 import com.snapdeal.archive.exception.BusinessException;
 import com.snapdeal.archive.factory.DataBaseFactory;
+import com.snapdeal.archive.util.ArchivalContext;
 import com.snapdeal.archive.util.SystemLog;
 import com.snapdeal.archive.util.TimeTracker;
 
@@ -128,7 +133,8 @@ public class MasterDbDaoImpl implements MasterDbDao {
     }
 
     @Override
-    @Transactional("masterTransactionManager")
+   // @Transactional("masterTransactionManager")
+    @ArchiveTransactional(transactionOn = DatabaseType.MASTER)
     public Long getCountFromMaster(String tableName, String criteria) throws BusinessException {
         String query = "select count(*) from " + tableName + " " + criteria;
         SystemLog.logMessage("Getting Result for query.!!! \n " + query);
@@ -136,16 +142,20 @@ public class MasterDbDaoImpl implements MasterDbDao {
         tt.startTracking();
         Object[] params = null;
         try {
-            List<Map<String, Object>> count = getSimpleJdbcTemplate().queryForList(query, params);
+            /*List<Map<String, Object>> count = getSimpleJdbcTemplate().queryForList(query, params);
             tt.trackTimeInSeconds("@@@@@@@Total time taken to execute query is  : ");
             for (Entry<String, Object> entry : count.get(0).entrySet()) {
                 return (Long) entry.getValue();
-            }
+            }*/
+            
+            Query query2 = databaseFactory.getSessionFactory(ArchivalContext.getContext().getContextName(), DatabaseType.MASTER).getCurrentSession().createSQLQuery("select count(*) from "+ tableName + " " + criteria);
+            Object o = query2.list(); 
+            return 0l;
         } catch (Exception e) {
             SystemLog.logMessage(e.getMessage());
             throw new BusinessException(e);
         }
-        return 0L;
+      //  return 0L;
 
     }
 
@@ -269,12 +279,14 @@ public class MasterDbDaoImpl implements MasterDbDao {
     }
     
     private SimpleJdbcTemplate getSimpleJdbcTemplate(){
-        //return databaseFactory.getSimplJdbcTemplate("OmsDs");
-        return  simpleJdbcTemplate;
+        ArchivalContextDto dto = ArchivalContext.getContext();
+        return databaseFactory.getSimplJdbcTemplate(dto.getContextName(),DatabaseType.MASTER);
+       // return  simpleJdbcTemplate;
     }
     
     private SimpleJdbcTemplate getArchivalSimpleJdbcTemplate(){
-    //    return databaseFactory.getSimplJdbcTemplate("OmsArchival");
-        return archivalJdbcTemplate;
+        ArchivalContextDto dto = ArchivalContext.getContext();
+        return databaseFactory.getSimplJdbcTemplate(dto.getContextName(),DatabaseType.ARCHIVAL);
+      //  return archivalJdbcTemplate;
     }
 }

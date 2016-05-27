@@ -119,5 +119,8 @@
         <property name="prefix" value="/pages/" />
         <property name="suffix" value=".jsp" />
     </bean>
+    
+    <bean id="archivalContextFilter" class="com.snapdeal.archive.filter.ArchiveContextFilter">
+	</bean>
 
 </beans>

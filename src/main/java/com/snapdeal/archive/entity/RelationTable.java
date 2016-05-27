@@ -54,7 +54,7 @@ public class RelationTable implements Serializable {
     @Column(name = "related_column_name")
     private String             relatedToColumnName;
 
-   /* @Column(name = "level")
+    /* @Column(name = "level")
     private Integer            level;*/
 
     @Column(name = "relation_column")
@@ -145,11 +145,11 @@ public class RelationTable implements Serializable {
     public void setRelatedToColumnName(String relatedToColumnName) {
         this.relatedToColumnName = relatedToColumnName;
     }
-/*
+    /*
     public Integer getLevel() {
         return level;
     }
-
+    
     public void setLevel(Integer level) {
         this.level = level;
     }*/
@@ -236,9 +236,9 @@ public class RelationTable implements Serializable {
 
     @Override
     public String toString() {
-        return "RelationTable [id=" + id + ", tableName=" + tableName + ", relatedToTableName=" + relatedToTableName + ", relatedToColumnName=" + relatedToColumnName + ", level="
-                + ", relationColumn=" + relationColumn + ", relatedToColumnType=" + relatedToColumnType + ", parentRelation=" + parentRelation + ", relations=" + relations
-                + "]";
+        return "RelationTable [id=" + id + ", tableName=" + tableName + ", relatedToTableName=" + relatedToTableName + ", relatedToColumnName=" + relatedToColumnName
+                + ", relatedToColumnType=" + relatedToColumnType + ", primaryColumn=" + primaryColumn + ", isDeletionAllowed=" + isDeletionAllowed + ", auditFields=" + auditFields
+                + ", queryType=" + queryType + "]";
     }
 
     @Override

@@ -38,9 +38,6 @@ public class ArchivalController {
 
     @Autowired
     private RelationDao     relationDao;
-
-    /*@Autowired
-    private ArchivalService archivalService;*/
     
     @Autowired
     private RelationTableService relationTableService;
