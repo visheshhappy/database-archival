@@ -21,7 +21,6 @@ import com.snapdeal.archive.dao.MasterDbDao;
 import com.snapdeal.archive.entity.RelationTable;
 import com.snapdeal.archive.entity.RelationTable.QueryType;
 import com.snapdeal.archive.exception.BusinessException;
-import com.snapdeal.archive.factory.DataBaseFactory;
 import com.snapdeal.archive.util.SystemLog;
 import com.snapdeal.archive.util.TimeTracker;
 
@@ -37,9 +36,6 @@ public class MasterDbDaoImpl implements MasterDbDao {
     
     @Autowired
     private SimpleJdbcTemplate archivalJdbcTemplate;
-    
-    @Autowired
-    private DataBaseFactory databaseFactory;
     
     @Value("${archived.column.name}")
     private String archivedColumnName;
