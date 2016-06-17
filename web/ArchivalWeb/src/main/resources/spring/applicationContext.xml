@@ -120,17 +120,4 @@
         <property name="suffix" value=".jsp" />
     </bean>
     
-    <bean id="testService1" class="com.snapdeal.archive.controller.TestService">
-    	<property name="test" value="test1"></property>
-    </bean>
-     <bean id="testService2" class="com.snapdeal.archive.controller.TestService">
-    	<property name="test" value="test2"></property>
-    </bean>
-    
-     <bean id="testService3" class="com.snapdeal.archive.controller.TestService">
-    	<property name="test" value="test3"></property>
-    </bean>
-    
-    <alias name="testService2" alias="myTestService"/>
-
 </beans>
